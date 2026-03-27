@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator, ValidationError
 from enum import Enum
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Any
 import sys
 
 
@@ -29,7 +29,7 @@ class Zone(BaseModel):
     @model_validator(mode='after')
     def hub_check(self) -> "Zone":
         if ' ' in self.name or '-' in self.name:
-            raise ValueError("Zone names can use any valid characters but dashes and spaces.")
+            raise ValueError("Zone names can not use dashes and spaces.")
         x, y = self.coordinate
         if x < 0 or y < 0:
             raise ValueError("coordinates must be non-negative")
@@ -43,7 +43,7 @@ class Connection(BaseModel):
     @model_validator(mode='after')
     def connection_check(self) -> "Connection":
         if self.hubs[0] == self.hubs[1]:
-            raise ValueError("connection must have diffrent hubs")
+            raise ValueError("connection must have difference hubs")
 
 
 class DronesNetwork(BaseModel):
@@ -60,9 +60,22 @@ def parse_input_file(file_name: str) -> DronesNetwork:
             text: str = f.read()
     except (FileNotFoundError, PermissionError) as error:
         print(error)
-    lines: list[str] = text.splitlines()
+    lines: List[str] = text.splitlines()
     if not lines[0].startswith('nb_drones:'):
         raise ValueError()
+
+
+def parse_lines(lines: List[str]) -> dict[str, Any]:
+    if not lines[0].startswith('nb_drones:'):
+        raise ValueError()
+    for line in lines:
+        if key.startswith('#') or line.strip():
+            continue
+        key, value = line.split(':', 1)
+        value = value.strip()
+        if key == 'nb_drones':
+            nb_drones = value
+        elif key == 'start_hub'
 
 
 
