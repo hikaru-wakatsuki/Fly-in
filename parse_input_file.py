@@ -19,14 +19,17 @@ class Color(Enum):
     GRAY = 'gray'
 
 
-class Hub(BaseModel):
+class Zone(BaseModel):
+    name: str = Field(...)
     coordinate: Tuple[int, int] = Field(...)
     zone: ZoneType = Field('normal')
     color: Optional[Color] = Field(None)
     max_drones: int = Field(1, gt=0)
 
     @model_validator(mode='after')
-    def hub_check(self) -> "Hub":
+    def hub_check(self) -> "Zone":
+        if ' ' in self.name or '-' in self.name:
+            raise ValueError("Zone names can use any valid characters but dashes and spaces.")
         x, y = self.coordinate
         if x < 0 or y < 0:
             raise ValueError("coordinates must be non-negative")
@@ -34,15 +37,20 @@ class Hub(BaseModel):
 
 
 class Connection(BaseModel):
-    hubs: List[Hub] = Field(..., max_length=2)
+    hubs: List[Zone] = Field(..., min_length=2, max_length=2)
     max_link_capacity: int = Field(..., gt=0)
+
+    @model_validator(mode='after')
+    def connection_check(self) -> "Connection":
+        if self.hubs[0] == self.hubs[1]:
+            raise ValueError("connection must have diffrent hubs")
 
 
 class DronesNetwork(BaseModel):
     nb_drones: int = Field(..., gt=0)
-    start_hub: Hub = Field(...)
-    end_hub: Hub = Field(...)
-    hubs: List[Hub] = Field(...)
+    start_hub: Zone = Field(...)
+    end_hub: Zone = Field(...)
+    hubs: List[Zone] = Field(...)
     connections: List[Connection] = Field(...)
 
 
@@ -50,9 +58,12 @@ def parse_input_file(file_name: str) -> DronesNetwork:
     try:
         with open(file_name) as f:
             text: str = f.read()
-
     except (FileNotFoundError, PermissionError) as error:
         print(error)
+    lines: list[str] = text.splitlines()
+    if not lines[0].startswith('nb_drones:'):
+        raise ValueError()
+
 
 
 def main() -> None:
