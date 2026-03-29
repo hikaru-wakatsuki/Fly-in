@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator, ValidationError
+from pydantic import BaseModel, Field, model_validator
 from enum import Enum
 from typing import Tuple, Optional, List, Set
 
@@ -58,7 +58,8 @@ class DronesNetwork(BaseModel):
 
         for zone in all_zones:
             if zone.coordinate in zone_coordinates:
-                raise ValueError(f"Duplicate zone coordinate: {zone.coordinate}")
+                raise ValueError(
+                    f"Duplicate zone coordinate: {zone.coordinate}")
             zone_coordinates.add(zone.coordinate)
 
         seen_connections: Set[Tuple[str, str]] = set()
@@ -104,12 +105,14 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
         try:
             x, y = int(parts[1]), int(parts[2])
         except ValueError:
-            raise ValueError(f"Invalid coordinates in zone {name}: {parts[1]}, {parts[2]}")
+            raise ValueError(
+                f"Invalid coordinates in zone {name}: {parts[1]}, {parts[2]}")
         if len(parts) == 3:
             return Zone(name=name, coordinate=(x, y))
         metadata: str = parts[3].strip()
         if not (metadata.startswith('[') and metadata.endswith(']')):
-            raise ValueError(f"Invalid metadata format in zone {name}: {metadata}")
+            raise ValueError(
+                f"Invalid metadata format in zone {name}: {metadata}")
         tags: List[str] = metadata[1:-1].split()
         seen_keys: Set[str] = set()
         zone: ZoneType = ZoneType.NORMAL
@@ -117,26 +120,32 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
         max_drones: int = 1
         for tag in tags:
             if '=' not in tag:
-                raise ValueError(f"Invalid metadata entry in zone {name}: {tag}")
+                raise ValueError(
+                    f"Invalid metadata entry in zone {name}: {tag}")
             key, value = tag.split('=', 1)
             if key in seen_keys:
-                raise ValueError(f"Duplicate metadata in zone {name}: {key}")
+                raise ValueError(
+                    f"Duplicate metadata in zone {name}: {key}")
             seen_keys.add(key)
             if key == 'zone':
                 try:
                     zone = ZoneType(value)
                 except ValueError:
-                    raise ValueError(f"Invalid zone value in zone {name}: {value}")
+                    raise ValueError(
+                        f"Invalid zone value in zone {name}: {value}")
             elif key == 'color':
                 color = value
             elif key == 'max_drones':
                 try:
                     max_drones = int(value)
                 except ValueError:
-                    raise ValueError(f"Invalid max_drones in zone {name}: {value}")
+                    raise ValueError(
+                        f"Invalid max_drones in zone {name}: {value}")
             else:
-                raise ValueError(f"Unknown metadata key in zone {name}: {key}")
-        return Zone(name=name, coordinate=(x, y), zone=zone, color=color, max_drones=max_drones)
+                raise ValueError(
+                    f"Unknown metadata key in zone {name}: {key}")
+        return Zone(name=name, coordinate=(x, y),
+                    zone=zone, color=color, max_drones=max_drones)
 
     def create_connection(config: str) -> Connection:
         parts = config.split(maxsplit=1)
@@ -152,29 +161,37 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
             return Connection(hubs=hubs)
         metadata: str = parts[1].strip()
         if not (metadata.startswith('[') and metadata.endswith(']')):
-            raise ValueError(f"Invalid metadata format in connection {parts[0]}: {metadata}")
+            raise ValueError(
+                f"Invalid metadata format in connection {parts[0]}: "
+                f"{metadata}")
         tags: List[str] = metadata[1:-1].split()
         seen_keys: Set[str] = set()
         max_link_capacity: int = 1
         for tag in tags:
             if '=' not in tag:
-                raise ValueError(f"Invalid metadata entry in connection {parts[0]}: {tag}")
+                raise ValueError(
+                    f"Invalid metadata entry in connection {parts[0]}: {tag}")
             key, value = tag.split('=', 1)
             if key in seen_keys:
-                raise ValueError(f"Duplicate metadata in connection {parts[0]}: {key}")
+                raise ValueError(
+                    f"Duplicate metadata in connection {parts[0]}: {key}")
             seen_keys.add(key)
             if key == 'max_link_capacity':
                 try:
                     max_link_capacity = int(value)
                 except ValueError:
-                    raise ValueError(f"Invalid max_link_capacity in connection {parts[0]}: {value}")
+                    raise ValueError(
+                        f"Invalid max_link_capacity in connection {parts[0]}: "
+                        f"{value}")
             else:
-                raise ValueError(f"Unknown metadata key in connection {parts[0]}: {key}")
+                raise ValueError(
+                    f"Unknown metadata key in connection {parts[0]}: {key}")
         return Connection(hubs=hubs, max_link_capacity=max_link_capacity)
 
     first: Optional[str] = next(
-        (l.strip() for l in lines
-        if l.strip() and not l.strip().startswith('#')), None)
+        (line.strip() for line in lines
+         if line.strip() and not line.strip().startswith('#')), None
+        )
     if not first or not first.startswith('nb_drones:'):
         raise ValueError("First meaningful line must be nb_drones")
     seen_label: Set[str] = set()
