@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, model_validator, ValidationError
 from enum import Enum
 from typing import Tuple, Optional, List, Set
-import sys
 
 
 class ZoneType(Enum):
@@ -50,11 +49,17 @@ class DronesNetwork(BaseModel):
     def drones_network_check(self) -> "DronesNetwork":
         all_zones: List[Zone] = [self.start_hub, self.end_hub] + self.hubs
         zone_names: Set[str] = set()
+        zone_coordinates: Set[str] = set()
 
         for zone in all_zones:
             if zone.name in zone_names:
                 raise ValueError(f"Duplicate zone name: {zone.name}")
             zone_names.add(zone.name)
+
+        for zone in all_zones:
+            if zone.coordinate in zone_coordinates:
+                raise ValueError(f"Duplicate zone coordinate: {zone.coordinate}")
+            zone_coordinates.add(zone.coordinate)
 
         seen_connections: Set[Tuple[str, str]] = set()
         for connection in self.connections:
@@ -67,6 +72,15 @@ class DronesNetwork(BaseModel):
             if connection_key in seen_connections:
                 raise ValueError(f"Duplicate connection: {hub1}-{hub2}")
             seen_connections.add(connection_key)
+
+        if self.start_hub.max_drones != 1:
+            print("Warning: start_hub max_drones is ignored")
+        if self.end_hub.max_drones != 1:
+            print("Warning: end_hub max_drones is ignored")
+        if self.start_hub.zone == ZoneType.BLOCKED:
+            raise ValueError("start_hub cannot be blocked")
+        if self.end_hub.zone == ZoneType.BLOCKED:
+            raise ValueError("end_hub cannot be blocked")
         return self
 
 
@@ -208,16 +222,3 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
     return DronesNetwork(
         nb_drones=nb_drones, start_hub=start_hub, end_hub=end_hub,
         hubs=hubs, connections=connections)
-
-
-def main() -> None:
-    if len(sys.argv) == 1:
-        return
-    if len(sys.argv) == 2:
-        try:
-            drones_network = parse_input_file(sys.argv[1])
-            print(drones_network)
-        except (ValidationError, TypeError, ValueError) as error:
-            print(error)
-    if len(sys.argv) > 2:
-        return
