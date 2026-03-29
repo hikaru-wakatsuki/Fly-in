@@ -30,16 +30,16 @@ def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
         for neighbor, _ in graph[node]:
             cost = get_cost(neighbor)
             new_distance: int = current_distance + cost
-
+            # to find the shortest paths
             if distance[neighbor] is None or new_distance < distance[neighbor]:
                 distance[neighbor] = new_distance
                 prev_zone[neighbor] = node
                 heapq.heappush(heap_queue, (new_distance, neighbor))
-
+    # restore
     path: List[Zone] = []
     cur: Optional[Zone] = end
-
     while cur is not None:
         path.append(cur)
         cur = prev_zone[cur]
-    return path.reverse()
+    path.reverse()
+    return path
