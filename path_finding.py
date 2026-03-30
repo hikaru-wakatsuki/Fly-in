@@ -10,7 +10,8 @@ def get_cost(zone: Zone) -> int:
 
 
 def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
-                  start: Zone, end: Zone) -> List[Zone]:
+                  start: Zone, end: Zone,
+                  penalties: Dict[Tuple[Zone, Zone], int]) -> List[Zone]:
     """Compute shortest paths from start using Dijkstra."""
     # 各ノードまでの最短距離と、経路復元用の直前ノードを初期化
     distance: Dict[Zone, Optional[int]] = {node: None for node in graph}
@@ -44,7 +45,8 @@ def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
         for neighbor, _ in graph[current_node]:
             if neighbor not in unvisited:
                 continue
-            new_distance: int = current_distance + get_cost(neighbor)
+            penalty: int = penalties.get((current_node, neighbor), 0)
+            new_distance: int = current_distance + get_cost(neighbor) + penalty
             # to find the shortest paths
             if distance[neighbor] is None or new_distance < distance[neighbor]:
                 distance[neighbor] = new_distance
@@ -57,3 +59,46 @@ def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
         cur = prev_zone[cur]
     path.reverse()
     return path
+
+
+def add_penalty(
+        path: List[Zone], penalties: Dict[Tuple[Zone, Zone], int],
+        value: int = 2) -> None:
+    """Add penalty to all edges in the given path."""
+    for i in range(len(path) - 1):
+        zone1: Zone = path[i]
+        zone2: Zone = path[i + 1]
+        penalty: int = value
+        if zone1.zone == ZoneType.RESTRICTED or zone2.zone == ZoneType.RESTRICTED:
+            penalty *= 2
+        penalties[(zone1, zone2)] = penalties.get((zone1, zone2), 0) + penalty
+        penalties[(zone2, zone1)] = penalties.get((zone2, zone1), 0) + penalty
+
+
+def find_multiple_paths(
+        graph: Dict[Zone, List[Tuple[Zone, int]]],
+        start: Zone, end: Zone, count: int) -> List[List[Zone]]:
+    """Find multiple path candidates by re-running Dijkstra with penalties."""
+    penalties: Dict[Tuple[Zone, Zone], int] = {}
+    paths: List[List[Zone]] = []
+    for _ in range(count):
+        path = dijkstra_path(graph, start, end, penalties)
+        add_penalty(path, penalties, value=2)
+        if path in paths:
+            continue
+        paths.append(path)
+    return paths
+
+
+def determine_path_conunt(nb_drones: int) -> int:
+    """Return number of paths to generate based on drone count."""
+    if nb_drones <= 2:
+        return 1
+    elif nb_drones <= 4:
+        return 2
+    elif nb_drones <= 8:
+        return 3
+    elif nb_drones <= 16:
+        return 4
+    else:
+        return 5
