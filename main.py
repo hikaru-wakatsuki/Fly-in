@@ -14,7 +14,7 @@ def main() -> None:
         except (ValidationError, TypeError, ValueError) as error:
             print(error)
         try:
-            graph = create_graph(network)
+            graph: Dict[Zone, Tuple] = create_graph(network)
         except ValueError as error:
             print(error)
         count: int = determine_path_conunt(network.nb_drones)
