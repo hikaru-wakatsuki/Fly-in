@@ -29,10 +29,10 @@ def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
             if distance[node] is None:
                 continue
             if (current_distance is None or distance[node] < current_distance
-                or (distance[node] == current_distance and current_node is not None
+                or (distance[node] == current_distance
+                    and current_node is not None
                     and node.zone == ZoneType.PRIORITY
-                    and current_node.zone != ZoneType.PRIORITY)
-                    ):
+                    and current_node.zone != ZoneType.PRIORITY)):
                 current_node = node
                 current_distance = distance[node]
 
@@ -69,7 +69,7 @@ def add_penalty(
         zone1: Zone = path[i]
         zone2: Zone = path[i + 1]
         penalty: int = value
-        if zone1.zone == ZoneType.RESTRICTED or zone2.zone == ZoneType.RESTRICTED:
+        if ZoneType.RESTRICTED in (zone1.zone, zone2.zone):
             penalty *= 2
         penalties[(zone1, zone2)] = penalties.get((zone1, zone2), 0) + penalty
         penalties[(zone2, zone1)] = penalties.get((zone2, zone1), 0) + penalty
