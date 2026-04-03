@@ -23,6 +23,7 @@ class SimulationState:
         #現在の占有
         self.zone_occupancy: Dict[Zone, int] = {}
         self.link_usage: Dict[Tuple[Zone, Zone], int] = {}
+        self.next_zone_reservation: Dict[Zone, int] = {}
 
     def initialize_state(self, drones: List[DroneState]) -> None:
         for drone in drones:
@@ -30,20 +31,22 @@ class SimulationState:
             self.zone_occupancy[zone] = self.zone_occupancy.get(zone, 0) + 1
 
     def leave_zone(self, zone: Zone) -> None:
-        self.zone_occupancy[zone] = self.zone_occupancy.get(zone) - 1
+        self.zone_occupancy[zone] -=  1
 
     def enter_zone(self, zone: Zone) -> None:
         self.zone_occupancy[zone] = self.zone_occupancy.get(zone, 0) + 1
 
     def leave_link(self, from_zone: Zone, to_zone: Zone) -> None:
         link: Tuple[Zone, Zone] = (from_zone, to_zone)
-        self.link_usage[link] = self.link_usage.get(link, 0) - 1
+        self.link_usage[link] = self.link_usage.get(link) - 1
+        self.next_zone_reservation[to_zone] -= 1
         self.enter_zone(to_zone)
 
     def enter_link(self, from_zone: Zone, to_zone: Zone) -> None:
         self.leave_zone(from_zone)
         link: Tuple[Zone, Zone] = (from_zone, to_zone)
         self.link_usage[link] = self.link_usage.get(link, 0) + 1
+        self.next_zone_reservation[to_zone] = self.next_zone_reservation.get(to_zone, 0) + 1
 
 
 def initialize_drones(nb_drones: int, start: Zone, path: List[Zone]) -> List[DroneState]:
@@ -54,12 +57,13 @@ def initialize_drones(nb_drones: int, start: Zone, path: List[Zone]) -> List[Dro
 
 
 def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone) -> bool:
-    if state.zone_occupancy.get(to_zone, 0) >= to_zone.max_drones:
+    current_occupancy: int = state.zone_occupancy.get(to_zone, 0)
+    reserved: int = state.next_zone_reservation.get(to_zone, 0)
+    if current_occupancy + reserved >= to_zone.max_drones:
         return False
-    max_link_capacity = None
     for zone, capacity in state.graph[from_zone]:
         if zone == to_zone:
-            max_link_capacity = capacity
+            max_link_capacity: int = capacity
             break
     return state.link_usage.get((from_zone, to_zone), 0) < max_link_capacity
 
@@ -96,3 +100,59 @@ def run_turn(state: SimulationState, drones: List[DroneState], end: Zone) -> Lis
                     drone.finished = True
                 movements.append(f"D{drone.drone_id}-{next_zone.name}")
     return movements
+
+
+def assign_paths(drone_count: int, start: Zone, paths: List[List[Zone]]) -> List[DroneState]:
+    drones: List[DroneState] = []
+    path_costs: List[tuple[List[Zone], int]] = []
+    for path in paths:
+        cost: int = 0
+        for zone in path[1:]:
+            if zone.zone == ZoneType.RESTRICTED:
+                cost += 2
+            else:
+                cost += 1
+        path_costs.append((path, cost))
+    # cost が小さいほど多く割り当てたいので、逆数で重みを作る
+    weights: List[float] = [1 / cost for _, cost in path_costs]
+    total_weight: float = sum(weights)
+    # ドローンの数　* pathに通す割合
+    assigned_counts: List[int] = [
+        int(drone_count * weight / total_weight)
+        for weight in weights
+    ]
+    while sum(assigned_counts) < drone_count:
+        best_index: int = weights.index(max(weights))
+        assigned_counts[best_index] += 1
+
+    drones: List[DroneState] = []
+    for (path, _), count in zip(path_costs, assigned_counts):
+        for i in range(1, drone_count + 1):
+            drones.append(DroneState(i, start, path))
+    return drones
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def run_simulation(
+    state: SimulationState,
+    drones: List[DroneState],
+    end: Zone,
+) -> List[str]:
+    logs: List[str] = []
+
+    while not all(drone.finished for drone in drones):
+        turn_moves = run_turn(state, drones, end)
+        logs.append(" ".join(turn_moves))
+
+    return logs
