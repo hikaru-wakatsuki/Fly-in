@@ -126,9 +126,11 @@ def assign_paths(drone_count: int, start: Zone, paths: List[List[Zone]]) -> List
         assigned_counts[best_index] += 1
 
     drones: List[DroneState] = []
+    drone_id: int = 1
     for (path, _), count in zip(path_costs, assigned_counts):
-        for i in range(1, drone_count + 1):
-            drones.append(DroneState(i, start, path))
+        for i in range(count):
+            drones.append(DroneState(drone_id, start, path))
+            drone_id += 1
     return drones
 
 
