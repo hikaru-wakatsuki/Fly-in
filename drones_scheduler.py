@@ -7,8 +7,8 @@ finished_drones: Set[int]
 
 
 class DroneState:
-    def __init__(self, drone_id: int, start: Zone, path: List[Zone]) -> None:
-        self.drone_id: int = drone_id
+    def __init__(self, drone_count: int, start: Zone, path: List[Zone]) -> None:
+        self.drone_count: int = drone_count
         self.current_zone: Zone = start
         self.path: List[Zone] = path
         self.path_index: int = 0
@@ -81,7 +81,7 @@ def run_turn(state: SimulationState, drones: List[DroneState], end: Zone) -> Lis
             drone.path_index += 1
             if drone.current_zone == end:
                     drone.finished = True
-            movements.append(f"D{drone.drone_id}-{drone.current_zone.name}")
+            movements.append(f"D{drone.drone_count}-{drone.current_zone.name}")
         else:
             next_zone: Zone = drone.path[drone.path_index + 1]
             if not can_move(state, drone.current_zone, next_zone):
@@ -90,7 +90,7 @@ def run_turn(state: SimulationState, drones: List[DroneState], end: Zone) -> Lis
                 state.enter_link(drone.current_zone, next_zone)
                 drone.in_transit = True
                 drone.transit_to = next_zone
-                movements.append(f"D{drone.drone_id}-{drone.current_zone.name}-{next_zone.name}")
+                movements.append(f"D{drone.drone_count}-{drone.current_zone.name}-{next_zone.name}")
             else:
                 state.leave_zone(drone.current_zone)
                 state.enter_zone(next_zone)
@@ -98,7 +98,7 @@ def run_turn(state: SimulationState, drones: List[DroneState], end: Zone) -> Lis
                 drone.path_index += 1
                 if next_zone == end:
                     drone.finished = True
-                movements.append(f"D{drone.drone_id}-{next_zone.name}")
+                movements.append(f"D{drone.drone_count}-{next_zone.name}")
     return movements
 
 
@@ -132,6 +132,9 @@ def assign_paths(drone_count: int, start: Zone, paths: List[List[Zone]]) -> List
             drones.append(DroneState(drone_id, start, path))
             drone_id += 1
     return drones
+
+
+def run(drone_count: int, start: Zone, path: List[Zone]) -> None:
 
 
 
