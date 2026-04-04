@@ -3,10 +3,14 @@ from typing import Tuple, Optional, List, Dict, Set
 
 
 def get_cost(zone: Zone) -> int:
-    """Return movement cost based on zone type."""
+    cost: int = 1
     if zone.zone == ZoneType.RESTRICTED:
-        return 2
-    return 1
+        cost += 5
+    if zone.max_drones <= 1:
+        cost += 5
+    elif zone.max_drones == 2:
+        cost += 2
+    return cost
 
 
 def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
@@ -47,7 +51,6 @@ def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
                 continue
             penalty: int = penalties.get((current_node, neighbor), 0)
             new_distance: int = current_distance + get_cost(neighbor) + penalty
-            # to find the shortest paths
             if distance[neighbor] is None or new_distance < distance[neighbor]:
                 distance[neighbor] = new_distance
                 prev_zone[neighbor] = current_node
@@ -83,7 +86,7 @@ def find_multiple_paths(
     paths: List[List[Zone]] = []
     for _ in range(count):
         path = dijkstra_path(graph, start, end, penalties)
-        add_penalty(path, penalties, value=2)
+        add_penalty(path, penalties, 2)
         if path in paths:
             continue
         paths.append(path)

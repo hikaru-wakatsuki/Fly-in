@@ -34,14 +34,16 @@ class SimulationState:
         self.zone_occupancy[zone] = self.zone_occupancy.get(zone, 0) + 1
 
     def leave_link(self, from_zone: Zone, to_zone: Zone) -> None:
-        link: Tuple[Zone, Zone] = (from_zone, to_zone)
+        link: Tuple[Zone, Zone] = tuple(
+            sorted((from_zone, to_zone), key=lambda zone: zone.name))
         self.link_usage[link] = self.link_usage.get(link) - 1
         self.next_zone_reservation[to_zone] -= 1
         self.enter_zone(to_zone)
 
     def enter_link(self, from_zone: Zone, to_zone: Zone) -> None:
         self.leave_zone(from_zone)
-        link: Tuple[Zone, Zone] = (from_zone, to_zone)
+        link: Tuple[Zone, Zone] = tuple(
+            sorted((from_zone, to_zone), key=lambda zone: zone.name))
         self.link_usage[link] = self.link_usage.get(link, 0) + 1
         next_zone_count: int = self.next_zone_reservation.get(to_zone, 0) + 1
         self.next_zone_reservation[to_zone] = next_zone_count
@@ -76,58 +78,57 @@ def run_turn(state: SimulationState, drones: List[DroneState],
             if drone.current_zone == end:
                 drone.finished = True
             movements.append(f"D{drone.drone_count}-{drone.current_zone.name}")
+
+    for drone in drones:
+        if drone.finished or drone.in_transit:
+            continue
+        next_zone: Zone = drone.path[drone.path_index + 1]
+        if not can_move(state, drone.current_zone, next_zone, end):
+            continue
+        if next_zone.zone == ZoneType.RESTRICTED:
+            state.enter_link(drone.current_zone, next_zone)
+            drone.in_transit = True
+            drone.transit_to = next_zone
+            movements.append(
+                f"D{drone.drone_count}-{drone.current_zone.name}"
+                f"-{next_zone.name}")
         else:
-            next_zone: Zone = drone.path[drone.path_index + 1]
-            if not can_move(state, drone.current_zone, next_zone, end):
-                continue
-            if next_zone.zone == ZoneType.RESTRICTED:
-                state.enter_link(drone.current_zone, next_zone)
-                drone.in_transit = True
-                drone.transit_to = next_zone
-                movements.append(
-                    f"D{drone.drone_count}-{drone.current_zone.name}"
-                    f"-{next_zone.name}")
-            else:
-                state.leave_zone(drone.current_zone)
-                state.enter_zone(next_zone)
-                drone.current_zone = next_zone
-                drone.path_index += 1
-                if next_zone == end:
-                    drone.finished = True
-                movements.append(f"D{drone.drone_count}-{next_zone.name}")
+            state.leave_zone(drone.current_zone)
+            state.enter_zone(next_zone)
+            drone.current_zone = next_zone
+            drone.path_index += 1
+            if next_zone == end:
+                drone.finished = True
+            movements.append(f"D{drone.drone_count}-{next_zone.name}")
     return movements
 
 
 def assign_paths(drone_count: int, start: Zone,
                  paths: List[List[Zone]]) -> List[DroneState]:
     drones: List[DroneState] = []
-    path_costs: List[tuple[List[Zone], int]] = []
+    path_costs: List[int] = []
     for path in paths:
         cost: int = 0
         for zone in path[1:]:
-            if zone.zone == ZoneType.RESTRICTED:
-                cost += 2
-            else:
-                cost += 1
-        path_costs.append((path, cost))
-    # cost が小さいほど多く割り当てたいので、逆数で重みを作る
-    weights: List[float] = [1 / cost for _, cost in path_costs]
-    total_weight: float = sum(weights)
-    # ドローンの数　* pathに通す割合
-    assigned_counts: List[int] = [
-        int(drone_count * weight / total_weight)
-        for weight in weights
-    ]
-    while sum(assigned_counts) < drone_count:
-        best_index: int = weights.index(max(weights))
+            cost += 2 if zone.zone == ZoneType.RESTRICTED else 1
+        path_costs.append((cost))
+    assigned_counts: List[int] = []
+    for i in range(len(paths)):
+        assigned_counts.append(0)
+    drone_id = 1
+    for _ in range(drone_count):
+        best_index = 0
+        best_score = None
+        for i in range(len(paths)):
+            # assignされたpathにペナルティを加え重複をへらす
+            congestion_penalty: int = assigned_counts[i] * 3
+            score = path_costs[i] + congestion_penalty
+            if best_score is None or score < best_score:
+                best_score = score
+                best_index = i
         assigned_counts[best_index] += 1
-
-    drones: List[DroneState] = []
-    drone_id: int = 1
-    for (path, _), count in zip(path_costs, assigned_counts):
-        for i in range(count):
-            drones.append(DroneState(drone_id, start, path))
-            drone_id += 1
+        drones.append(DroneState(drone_id, start, paths[best_index]))
+        drone_id += 1
     return drones
 
 
