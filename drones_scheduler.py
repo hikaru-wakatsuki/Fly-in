@@ -1,9 +1,5 @@
 from parse_input_file import Zone, ZoneType
-from typing import Tuple, Optional, List, Dict, Set
-
-
-drone_positions: Dict[int, Zone]
-finished_drones: Set[int]
+from typing import Tuple, Optional, List, Dict
 
 
 class DroneState:
@@ -76,7 +72,7 @@ def run_turn(state: SimulationState, drones: List[DroneState],
             drone.transit_to = None
             drone.path_index += 1
             if drone.current_zone == end:
-                    drone.finished = True
+                drone.finished = True
             movements.append(f"D{drone.drone_count}-{drone.current_zone.name}")
         else:
             next_zone: Zone = drone.path[drone.path_index + 1]
@@ -86,7 +82,9 @@ def run_turn(state: SimulationState, drones: List[DroneState],
                 state.enter_link(drone.current_zone, next_zone)
                 drone.in_transit = True
                 drone.transit_to = next_zone
-                movements.append(f"D{drone.drone_count}-{drone.current_zone.name}-{next_zone.name}")
+                movements.append(
+                    f"D{drone.drone_count}-{drone.current_zone.name}"
+                    f"-{next_zone.name}")
             else:
                 state.leave_zone(drone.current_zone)
                 state.enter_zone(next_zone)
