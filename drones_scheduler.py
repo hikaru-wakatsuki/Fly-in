@@ -137,10 +137,7 @@ def run_simulation(drone_count: int, start: Zone, end: Zone,
     drones: List[DroneState] = assign_paths(drone_count, start, paths)
     state: SimulationState = SimulationState(graph)
     state.initialize_state(drones)
+    movements: List[str] = []
     while not all(drone.finished for drone in drones):
-        movements: List[str] = run_turn(state, drones, end)
-        if not movements:
-            print("No more possible moves (deadlock)")
-            break
-
-        print(" ".join(movements))
+        movements.append(" ".join(run_turn(state, drones, end)))
+    print(len(movements))
