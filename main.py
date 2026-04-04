@@ -5,6 +5,7 @@ from create_graph import create_graph
 from path_finding import find_multiple_paths, determine_path_count
 from typing import Dict, List, Tuple
 from drones_scheduler import run_simulation
+from output_visualized import visualize
 
 
 def main() -> None:
@@ -29,8 +30,7 @@ def main() -> None:
             graph, paths)
         for log in logs:
             print(" ".join(log))
-        print("==================================================")
-        print(f"turn : {len(logs)}")
+        visualize(logs, graph)
 
 
 if __name__ == "__main__":

@@ -1,214 +1,107 @@
-from typing import Dict, List, Tuple
 import pygame
-
-
-class PygameVisualizer:
-    def __init__(self, zones:)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""
-output_visualized.py
-
-Simple pygame visualizer for drone simulation.
-Press SPACE to advance one turn.
-"""
-
 from typing import Dict, List, Tuple
-import pygame
+
+from parse_input_file import Zone
 
 
-class PygameVisualizer:
-    def __init__(
-        self,
-        zones: Dict[str, Tuple[int, int]],
-        connections: List[Tuple[str, str]],
-        turns: List[List[str]],
-        zone_types: Dict[str, str],
-    ) -> None:
-        self.zones = zones
-        self.connections = connections
-        self.turns = turns
-        self.zone_types = zone_types
+def visualize(logs: List[List[str]],
+              graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
+    pygame.init()
 
-        self.drone_positions: Dict[str, str] = {}
-        self.current_turn: int = 0
+    screen = pygame.display.set_mode((1000, 800))
+    clock = pygame.time.Clock()
 
-        pygame.init()
-        self.screen = pygame.display.set_mode((900, 700))
-        pygame.display.set_caption("Drone Simulation")
+    # =========================
+    # Zone一覧取得
+    # =========================
+    zones = set()
+    for turn in logs:
+        for item in turn:
+            parts = item.split("-")
+            for p in parts[1:]:
+                zones.add(p)
 
-        self.clock = pygame.time.Clock()
+    # graphにもいるので統合
+    zones.update(graph.keys())
 
-        self.scale = 40
-        self.offset_x = 100
-        self.offset_y = 100
+    # =========================
+    # 仮座標生成（本番はここ差し替え）
+    # =========================
+    pos: Dict[Zone, Tuple[int, int]] = {}
 
-    # -----------------------------
-    # Utils
-    # -----------------------------
-    def to_screen(self, pos: Tuple[int, int]) -> Tuple[int, int]:
-        x, y = pos
-        return (
-            x * self.scale + self.offset_x,
-            y * self.scale + self.offset_y,
+    for i, z in enumerate(zones):
+        pos[z] = (
+            100 + (i * 80) % 800,
+            100 + ((i * 80) // 800) * 120
         )
 
-    def get_zone_color(self, zone: str) -> Tuple[int, int, int]:
-        ztype = self.zone_types.get(zone, "normal")
+    # =========================
+    # logsパース（turn -> drone -> zone）
+    # =========================
+    state: List[Dict[int, Zone]] = []
 
-        if ztype == "normal":
-            return (200, 200, 200)
-        if ztype == "restricted":
-            return (255, 100, 100)
-        if ztype == "priority":
-            return (100, 255, 100)
-        if ztype == "blocked":
-            return (80, 80, 80)
+    for turn in logs:
+        frame = {}
+        for item in turn:
+            parts = item.split("-")
 
-        return (200, 200, 200)
+            drone_id = int(parts[0][1:])  # D1 → 1
+            zone_name = parts[-1]
 
-    # -----------------------------
-    # Simulation update
-    # -----------------------------
-    def update_positions(self) -> None:
-        if self.current_turn >= len(self.turns):
-            return
+            frame[drone_id] = zone_name
 
-        for move in self.turns[self.current_turn]:
-            drone, destination = move.split("-")
-            self.drone_positions[drone] = destination
+        state.append(frame)
 
-        self.current_turn += 1
+    # =========================
+    # pygame loop
+    # =========================
+    t = 0
+    running = True
 
-    # -----------------------------
-    # Draw functions
-    # -----------------------------
-    def draw_connections(self) -> None:
-        for a, b in self.connections:
-            pygame.draw.line(
-                self.screen,
-                (120, 120, 120),
-                self.to_screen(self.zones[a]),
-                self.to_screen(self.zones[b]),
-                2,
-            )
+    while running:
+        screen.fill((20, 20, 20))
 
-    def draw_zones(self) -> None:
-        for name, pos in self.zones.items():
-            pygame.draw.circle(
-                self.screen,
-                self.get_zone_color(name),
-                self.to_screen(pos),
-                10,
-            )
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-    def draw_drones(self) -> None:
-        for drone, zone in self.drone_positions.items():
-            pygame.draw.circle(
-                self.screen,
-                (0, 200, 255),
-                self.to_screen(self.zones[zone]),
-                6,
-            )
+        # =========================
+        # graph描画（edge）
+        # =========================
+        for from_zone, edges in graph.items():
+            if from_zone not in pos:
+                continue
 
-    def draw_text(self) -> None:
-        font = pygame.font.SysFont(None, 28)
-        text = font.render(f"Turn: {self.current_turn}", True, (255, 255, 255))
-        self.screen.blit(text, (20, 20))
+            x1, y1 = pos[from_zone]
 
-    # -----------------------------
-    # Main loop
-    # -----------------------------
-    def run(self) -> None:
-        running = True
+            for to_zone, _ in edges:
+                if to_zone not in pos:
+                    continue
 
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+                x2, y2 = pos[to_zone]
+                pygame.draw.line(screen, (80, 80, 80), (x1, y1), (x2, y2), 1)
 
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        self.update_positions()
+        # =========================
+        # zone描画
+        # =========================
+        for z, (x, y) in pos.items():
+            pygame.draw.circle(screen, (120, 200, 255), (x, y), 18)
 
-            self.screen.fill((30, 30, 30))
+        # =========================
+        # drone描画
+        # =========================
+        if t < len(state):
+            for drone_id, zone in state[t].items():
+                if zone in pos:
+                    x, y = pos[zone]
+                    pygame.draw.circle(screen, (255, 80, 80), (x, y), 6)
 
-            self.draw_connections()
-            self.draw_zones()
-            self.draw_drones()
-            self.draw_text()
+        pygame.display.flip()
 
-            pygame.display.flip()
-            self.clock.tick(60)
+        t += 1
+        if t >= len(state):
+            t = len(state) - 1
 
-        pygame.quit()
+        clock.tick(5)
 
-
-# -----------------------------
-# Example usage
-# -----------------------------
-if __name__ == "__main__":
-    zones = {
-        "hub": (0, 0),
-        "roof1": (3, 4),
-        "corridorA": (4, 3),
-        "tunnelB": (7, 4),
-        "goal": (10, 10),
-    }
-
-    connections = [
-        ("hub", "roof1"),
-        ("hub", "corridorA"),
-        ("roof1", "corridorA"),
-        ("corridorA", "tunnelB"),
-        ("tunnelB", "goal"),
-    ]
-
-    zone_types = {
-        "hub": "normal",
-        "roof1": "restricted",
-        "corridorA": "priority",
-        "tunnelB": "normal",
-        "goal": "normal",
-    }
-
-    turns = [
-        ["D1-roof1", "D2-corridorA"],
-        ["D1-corridorA", "D2-tunnelB"],
-        ["D1-tunnelB", "D2-goal"],
-        ["D1-goal"],
-    ]
-
-    visualizer = PygameVisualizer(zones, connections, turns, zone_types)
-    visualizer.run()
-🎯 これでできること
-ノード表示（色付
+    pygame.quit()
