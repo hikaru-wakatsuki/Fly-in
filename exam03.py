@@ -86,7 +86,7 @@ def convert_string(line: str, i: int) -> str:
 def count_same_check(line: str) -> bool:
     dct: dict[str, int] = {}
     for c in line:
-        if not c in dct:
+        if c not in dct:
             dct[c] = 1
         elif c in dct:
             dct[c] += 1
