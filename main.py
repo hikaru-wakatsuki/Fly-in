@@ -24,9 +24,13 @@ def main() -> None:
         count: int = determine_path_count(network.nb_drones)
         paths: List[List[Zone]] = find_multiple_paths(
             graph, network.start_hub, network.end_hub, count)
-        run_simulation(
+        logs: List[List[str]] = run_simulation(
             network.nb_drones, network.start_hub, network.end_hub,
             graph, paths)
+        for log in logs:
+            print(" ".join(log))
+        print("==================================================")
+        print(f"turn : {len(logs)}")
 
 
 if __name__ == "__main__":

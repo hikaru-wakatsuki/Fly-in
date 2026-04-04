@@ -133,11 +133,11 @@ def assign_paths(drone_count: int, start: Zone,
 
 def run_simulation(drone_count: int, start: Zone, end: Zone,
                    graph: Dict[Zone, List[Tuple[Zone, int]]],
-                   paths: List[List[Zone]]) -> None:
+                   paths: List[List[Zone]]) -> List[str]:
     drones: List[DroneState] = assign_paths(drone_count, start, paths)
     state: SimulationState = SimulationState(graph)
     state.initialize_state(drones)
-    movements: List[str] = []
+    logs: List[List[str]] = []
     while not all(drone.finished for drone in drones):
-        movements.append(" ".join(run_turn(state, drones, end)))
-    print(len(movements))
+        logs.append(run_turn(state, drones, end))
+    return logs
