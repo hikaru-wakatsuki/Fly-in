@@ -47,11 +47,13 @@ class SimulationState:
         self.next_zone_reservation[to_zone] = next_zone_count
 
 
-def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone) -> bool:
-    current_occupancy: int = state.zone_occupancy.get(to_zone, 0)
-    reserved: int = state.next_zone_reservation.get(to_zone, 0)
-    if current_occupancy + reserved >= to_zone.max_drones:
-        return False
+def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
+             end: Zone) -> bool:
+    if to_zone != end:
+        current_occupancy: int = state.zone_occupancy.get(to_zone, 0)
+        reserved: int = state.next_zone_reservation.get(to_zone, 0)
+        if current_occupancy + reserved >= to_zone.max_drones:
+            return False
     for zone, capacity in state.graph[from_zone]:
         if zone == to_zone:
             max_link_capacity: int = capacity
@@ -76,7 +78,7 @@ def run_turn(state: SimulationState, drones: List[DroneState],
             movements.append(f"D{drone.drone_count}-{drone.current_zone.name}")
         else:
             next_zone: Zone = drone.path[drone.path_index + 1]
-            if not can_move(state, drone.current_zone, next_zone):
+            if not can_move(state, drone.current_zone, next_zone, end):
                 continue
             if next_zone.zone == ZoneType.RESTRICTED:
                 state.enter_link(drone.current_zone, next_zone)
@@ -137,4 +139,8 @@ def run_simulation(drone_count: int, start: Zone, end: Zone,
     state.initialize_state(drones)
     while not all(drone.finished for drone in drones):
         movements: List[str] = run_turn(state, drones, end)
+        if not movements:
+            print("No more possible moves (deadlock)")
+            break
+
         print(" ".join(movements))

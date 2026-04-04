@@ -22,9 +22,6 @@ class Zone(BaseModel):
     def hub_check(self) -> "Zone":
         if ' ' in self.name or '-' in self.name:
             raise ValueError("Zone names can not use dashes and spaces.")
-        x, y = self.coordinate
-        if x < 0 or y < 0:
-            raise ValueError("coordinates must be non-negative")
         return self
 
 
