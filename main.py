@@ -23,12 +23,8 @@ def main() -> None:
         paths: List[List[Zone]] = find_multiple_paths(
             graph, network.start_hub, network.end_hub, count)
         run_simulation(
-            network.nb_drones,
-            network.start_hub,
-            network.end_hub,
-            graph,
-            paths
-        )
+            network.nb_drones, network.start_hub, network.end_hub,
+            graph, paths)
 
     if len(sys.argv) > 2:
         return
