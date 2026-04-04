@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ConfigDict
 from enum import Enum
 from typing import Tuple, Optional, List, Set
 
@@ -11,6 +11,7 @@ class ZoneType(Enum):
 
 
 class Zone(BaseModel):
+    model_config = ConfigDict(frozen=True)
     name: str = Field(...)
     coordinate: Tuple[int, int] = Field(...)
     zone: ZoneType = Field(ZoneType.NORMAL)
