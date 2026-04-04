@@ -7,7 +7,8 @@ finished_drones: Set[int]
 
 
 class DroneState:
-    def __init__(self, drone_count: int, start: Zone, path: List[Zone]) -> None:
+    def __init__(self, drone_count: int, start: Zone,
+                 path: List[Zone]) -> None:
         self.drone_count: int = drone_count
         self.current_zone: Zone = start
         self.path: List[Zone] = path
@@ -20,7 +21,7 @@ class DroneState:
 class SimulationState:
     def __init__(self, graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
         self.graph: Dict[Zone, List[Tuple[Zone, int]]] = graph
-        #現在の占有
+        # 現在の占有
         self.zone_occupancy: Dict[Zone, int] = {}
         self.link_usage: Dict[Tuple[Zone, Zone], int] = {}
         self.next_zone_reservation: Dict[Zone, int] = {}
@@ -31,7 +32,7 @@ class SimulationState:
             self.zone_occupancy[zone] = self.zone_occupancy.get(zone, 0) + 1
 
     def leave_zone(self, zone: Zone) -> None:
-        self.zone_occupancy[zone] -=  1
+        self.zone_occupancy[zone] -= 1
 
     def enter_zone(self, zone: Zone) -> None:
         self.zone_occupancy[zone] = self.zone_occupancy.get(zone, 0) + 1
@@ -46,14 +47,8 @@ class SimulationState:
         self.leave_zone(from_zone)
         link: Tuple[Zone, Zone] = (from_zone, to_zone)
         self.link_usage[link] = self.link_usage.get(link, 0) + 1
-        self.next_zone_reservation[to_zone] = self.next_zone_reservation.get(to_zone, 0) + 1
-
-
-def initialize_drones(nb_drones: int, start: Zone, path: List[Zone]) -> List[DroneState]:
-    drones: List[DroneState] = []
-    for i in range(1, nb_drones + 1):
-        drones.append(DroneState(i, start, path))
-    return drones
+        next_zone_count: int = self.next_zone_reservation.get(to_zone, 0) + 1
+        self.next_zone_reservation[to_zone] = next_zone_count
 
 
 def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone) -> bool:
@@ -68,7 +63,8 @@ def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone) -> bool:
     return state.link_usage.get((from_zone, to_zone), 0) < max_link_capacity
 
 
-def run_turn(state: SimulationState, drones: List[DroneState], end: Zone) -> List[str]:
+def run_turn(state: SimulationState, drones: List[DroneState],
+             end: Zone) -> List[str]:
     movements: List[str] = []
     for drone in drones:
         if drone.finished:
@@ -102,7 +98,8 @@ def run_turn(state: SimulationState, drones: List[DroneState], end: Zone) -> Lis
     return movements
 
 
-def assign_paths(drone_count: int, start: Zone, paths: List[List[Zone]]) -> List[DroneState]:
+def assign_paths(drone_count: int, start: Zone,
+                 paths: List[List[Zone]]) -> List[DroneState]:
     drones: List[DroneState] = []
     path_costs: List[tuple[List[Zone], int]] = []
     for path in paths:
@@ -134,30 +131,12 @@ def assign_paths(drone_count: int, start: Zone, paths: List[List[Zone]]) -> List
     return drones
 
 
-def run(drone_count: int, start: Zone, path: List[Zone]) -> None:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def run_simulation(
-    state: SimulationState,
-    drones: List[DroneState],
-    end: Zone,
-) -> List[str]:
-    logs: List[str] = []
-
+def run_simulation(drone_count: int, start: Zone, end: Zone,
+                   graph: Dict[Zone, List[Tuple[Zone, int]]],
+                   paths: List[List[Zone]]) -> None:
+    drones: List[DroneState] = assign_paths(drone_count, start, paths)
+    state: SimulationState = SimulationState(graph)
+    state.initialize_state(drones)
     while not all(drone.finished for drone in drones):
-        turn_moves = run_turn(state, drones, end)
-        logs.append(" ".join(turn_moves))
-
-    return logs
+        movements: List[str] = run_turn(state, drones, end)
+        print(" ".join(movements))

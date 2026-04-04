@@ -90,7 +90,7 @@ def find_multiple_paths(
     return paths
 
 
-def determine_path_conunt(nb_drones: int) -> int:
+def determine_path_count(nb_drones: int) -> int:
     """Return number of paths to generate based on drone count."""
     if nb_drones <= 2:
         return 1
