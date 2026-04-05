@@ -1,16 +1,17 @@
 import pygame
 from typing import Dict, List, Tuple, Optional
-from parse_input_file import Zone
+from parse_input_file import Zone, ZoneType
 
 
 def visualize(
     logs: List[List[str]], graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
-    # 初期化
+    # pygameスタート
     pygame.init()
     screen = pygame.display.set_mode((1800, 600))
     pygame.display.set_caption("Fly-in Visualization")
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 20)
+    font = pygame.font.Font(None, 28)
+    zone_font = pygame.font.Font(None, 14)
 
     # 拡大倍率
     SCALE = 80
@@ -52,59 +53,76 @@ def visualize(
             drone_id = int(parts[0][1:])
             turn_state[drone_id] = []
             zone_names = parts[1:]
-            for zone_name in zone_names:
-                if zone_name in zone_map:
+            for zone_key in zone_names:
+                if zone_key in zone_map:
                     # zone追加
-                    turn_state[drone_id].append(zone_map[zone_name])
+                    turn_state[drone_id].append(zone_map[zone_key])
         drone_movements.append(turn_state)
 
-    t = 0
+    turn: int = 1
     running = True
 
     while running:
+        #画面リセット
         screen.fill((20, 20, 20))
-
+        # イベント：ユーザがpygameを閉じた場合
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # edge draw
+        # Zoneのlinkに線を引く
         for from_zone, edges in graph.items():
             x1, y1 = to_screen(from_zone)
-            for to_zone, _ in edges:
+            for to_zone, max_link_capacity in edges:
                 x2, y2 = to_screen(to_zone)
-                pygame.draw.line(screen, (80, 80, 80), (x1, y1), (x2, y2), 1)
+                max_link_capacity *= 5
+                pygame.draw.line(screen, (80, 80, 80), (x1, y1), (x2, y2), max_link_capacity)
 
-        # zone draw
+        # Zoneを描写
         for zone in zone_map.values():
             x, y = to_screen(zone)
             zone_color = parse_color(zone.color)
-
-            pygame.draw.circle(screen, zone_color, (x, y), 18)
-
             if zone.max_drones > 1:
-                pygame.draw.circle(screen, (220, 220, 220), (x, y), 24, 1)
+                rect = pygame.Rect(x - 21, y - 21, 42, 42)
+                pygame.draw.rect(screen, (220, 220, 220), rect, 0)
+            #四角形(left, top, width, height)
+            rect = pygame.Rect(x - 18, y - 18, 36, 36)
+            pygame.draw.rect(screen, zone_color, rect, 0)
+            name_color =  (255, 0, 0) if zone.zone == ZoneType.RESTRICTED else (220, 220, 220)
+            zone_name = zone_font.render(zone.name, True, name_color)
+            screen.blit(zone_name, (x - 9 - len(zone.name), y - 35))
 
-            label = font.render(zone.name, True, (220, 220, 220))
-            screen.blit(label, (x + 10, y + 10))
-
-        # drone draw
-        if 0 <= t < len(drone_movements):
-            for drone_id, zone in drone_movements[t].items():
-                x, y = to_screen(zone)
-
-                pygame.draw.circle(screen, (255, 80, 80), (x, y), 6)
+        # Droneを描写
+        if turn - 1 < len(drone_movements):
+            for drone_id, zones in drone_movements[turn - 1].items():
+                # 到着
+                if len(zones) == 1:
+                    x, y = to_screen(zones[0])
+                # link上
+                if len(zones) == 2:
+                    x1, y1 = to_screen(zones[0])
+                    x2, y2 = to_screen(zones[1])
+                    x, y = (x1 + x2) / 2, (y1 + y2) / 2
+                pygame.draw.circle(screen, (255, 80, 80), (x, y), 8)
                 drone_label = font.render(f"D{drone_id}", True, (255, 180, 180))
                 screen.blit(drone_label, (x + 8, y - 18))
 
-        turn_label = font.render(f"Turn: {t}", True, (255, 255, 255))
+        turn_label = font.render(f"Turn: {turn}", True, (255, 255, 255))
         screen.blit(turn_label, (20, 20))
+        # ① max_drones >= 2
+        outer_rect = pygame.Rect(20, 50, 20, 20)
+        pygame.draw.rect(screen, (220, 220, 220), outer_rect, 2)
+        legend_text = font.render("Capacity >= 2", True, (255, 255, 255))
+        screen.blit(legend_text, (50, 50))
 
+        # ② restricted zone
+        restricted_text = font.render("Restricted Zone", True, (255, 0, 0))
+        screen.blit(restricted_text, (20, 80))
         pygame.display.flip()
 
-        if t < len(drone_movements) - 1:
-            t += 1
+        if turn < len(drone_movements):
+            turn += 1
 
-        clock.tick(2)
+        clock.tick(1)
 
     pygame.quit()
