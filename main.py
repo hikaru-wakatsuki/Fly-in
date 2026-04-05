@@ -5,7 +5,7 @@ from create_graph import create_graph
 from path_finding import find_multiple_paths, determine_path_count
 from typing import Dict, List, Tuple
 from drones_scheduler import run_simulation
-from output_visualized import visualize
+from output_visualize import visualize
 
 
 def main() -> None:

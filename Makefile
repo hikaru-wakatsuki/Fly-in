@@ -14,10 +14,10 @@ $(INSTALL_STAMP): $(VENV) $(REQUIREMENTS)
 install: $(INSTALL_STAMP)
 
 run: install
-	$(VENV)/bin/python $(MAIN) $(FILE)
+	$(VENV)/bin/python3 $(MAIN) $(FILE)
 
 debug: install
-	$(VENV)/bin/python -m pdb $(MAIN) $(FILE)
+	$(VENV)/bin/python3 -m pdb $(MAIN) $(FILE)
 
 clean:
 	rm -rf $(VENV)
