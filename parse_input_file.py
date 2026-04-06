@@ -216,8 +216,8 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
         if label == 'nb_drones':
             try:
                 nb_drones = int(config)
-            except ValueError:
-                raise ValueError(f"Invalid nb_drones: {config}")
+            except ValueError as error:
+                raise ValueError(f"Invalid nb_drones: {config}") from error
         elif label == 'start_hub':
             start_hub = create_zone(config)
         elif label == 'end_hub':

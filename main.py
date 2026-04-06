@@ -8,6 +8,15 @@ from drones_scheduler import run_simulation
 from output_visualize import visualize
 
 
+def output_error_message(error: Exception) -> None:
+    tb = error.__traceback__
+    while tb.tb_next:
+        tb = tb.tb_next
+    line_number = tb.tb_lineno
+    file_name = tb.tb_frame.f_code.co_filename
+    print(F"Error in {file_name} at line {line_number}: {error}")
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         return
@@ -15,12 +24,12 @@ def main() -> None:
         try:
             network: DronesNetwork = parse_input_file(sys.argv[1])
         except (ValidationError, TypeError, ValueError) as error:
-            print(error)
+            output_error_message(error)
             return
         try:
             graph: Dict[Zone, List[Tuple[Zone, int]]] = create_graph(network)
         except ValueError as error:
-            print(error)
+            output_error_message(error)
             return
         count: int = determine_path_count(network.nb_drones)
         paths: List[List[Zone]] = find_multiple_paths(

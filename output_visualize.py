@@ -7,17 +7,24 @@ def visualize(
     logs: List[List[str]], graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
     # pygameスタート
     pygame.init()
-    screen = pygame.display.set_mode((1800, 600))
+
+    max_x = max(zone.coordinate[0] for zone in graph.keys())
+    min_x = min(zone.coordinate[0] for zone in graph.keys())
+    max_y = max(zone.coordinate[1] for zone in graph.keys())
+    min_y = min(zone.coordinate[1] for zone in graph.keys())
+
+    # 拡大倍率
+    SCALE = 80
+    # 画面上の位置調整
+    OFFSET_X = (SCALE * (min_x + 1))
+    OFFSET_Y = SCALE * (max_y - min_y)
+
+    screen = pygame.display.set_mode((SCALE * (max_x + 2), OFFSET_Y * 2))
     pygame.display.set_caption("Fly-in Visualization")
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 28)
     zone_font = pygame.font.Font(None, 14)
 
-    # 拡大倍率
-    SCALE = 80
-    # 画面上の位置調整
-    OFFSET_X = 30
-    OFFSET_Y = 300
 
     # 色変換
     def parse_color(color: Optional[str]) -> Tuple[int, int, int]:
