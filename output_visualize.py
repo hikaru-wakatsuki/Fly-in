@@ -3,8 +3,8 @@ from typing import Dict, List, Tuple, Optional
 from parse_input_file import Zone, ZoneType
 
 
-def visualize(
-    logs: List[List[str]], graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
+def visualize(logs: List[List[str]],
+              graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
     # pygameスタート
     pygame.init()
 
@@ -25,16 +25,15 @@ def visualize(
     font = pygame.font.Font(None, 28)
     zone_font = pygame.font.Font(None, 14)
 
-
     # 色変換
     def parse_color(color: Optional[str]) -> Tuple[int, int, int]:
         if color is None:
-            return (120, 200, 255)
+            color = 'gray'
         try:
             c = pygame.Color(color)
             return (c.r, c.g, c.b)
-        except ValueError:
-            return (120, 200, 255)
+        except ValueError as error:
+            raise ValueError() from error
 
     # 座標変換
     def to_screen(zone: Zone) -> Tuple[int, int]:
@@ -70,7 +69,7 @@ def visualize(
     running = True
 
     while running:
-        #画面リセット
+        # 画面リセット
         screen.fill((20, 20, 20))
         # イベント：ユーザがpygameを閉じた場合
         for event in pygame.event.get():
@@ -83,7 +82,9 @@ def visualize(
             for to_zone, max_link_capacity in edges:
                 x2, y2 = to_screen(to_zone)
                 max_link_capacity *= 5
-                pygame.draw.line(screen, (80, 80, 80), (x1, y1), (x2, y2), max_link_capacity)
+                pygame.draw.line(
+                    screen, (80, 80, 80), (x1, y1), (x2, y2),
+                    max_link_capacity)
 
         # Zoneを描写
         for zone in zone_map.values():
@@ -92,10 +93,11 @@ def visualize(
             if zone.max_drones > 1:
                 rect = pygame.Rect(x - 21, y - 21, 42, 42)
                 pygame.draw.rect(screen, (220, 220, 220), rect, 0)
-            #四角形(left, top, width, height)
+            # 四角形(left, top, width, height)
             rect = pygame.Rect(x - 18, y - 18, 36, 36)
             pygame.draw.rect(screen, zone_color, rect, 0)
-            name_color =  (255, 0, 0) if zone.zone == ZoneType.RESTRICTED else (220, 220, 220)
+            name_color = ((255, 0, 0) if zone.zone == ZoneType.RESTRICTED
+                          else (220, 220, 220))
             zone_name = zone_font.render(zone.name, True, name_color)
             screen.blit(zone_name, (x - 9 - len(zone.name), y - 35))
 
@@ -111,7 +113,8 @@ def visualize(
                     x2, y2 = to_screen(zones[1])
                     x, y = (x1 + x2) / 2, (y1 + y2) / 2
                 pygame.draw.circle(screen, (255, 80, 80), (x, y), 8)
-                drone_label = font.render(f"D{drone_id}", True, (255, 180, 180))
+                drone_label = font.render(f"D{drone_id}",
+                                          True, (255, 180, 180))
                 screen.blit(drone_label, (x + 8, y - 18))
 
         turn_label = font.render(f"Turn: {turn}", True, (255, 255, 255))

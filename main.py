@@ -15,31 +15,38 @@ def output_error_message(error: Exception) -> None:
     line_number = tb.tb_lineno
     file_name = tb.tb_frame.f_code.co_filename
     print(F"Error in {file_name} at line {line_number}: {error}")
+    sys.exit(1)
 
 
 def main() -> None:
     if len(sys.argv) != 2:
         return
     if len(sys.argv) == 2:
+
         try:
             network: DronesNetwork = parse_input_file(sys.argv[1])
         except (ValidationError, TypeError, ValueError) as error:
             output_error_message(error)
-            return
+
         try:
             graph: Dict[Zone, List[Tuple[Zone, int]]] = create_graph(network)
         except ValueError as error:
             output_error_message(error)
-            return
+
         count: int = determine_path_count(network.nb_drones)
         paths: List[List[Zone]] = find_multiple_paths(
             graph, network.start_hub, network.end_hub, count)
         logs: List[List[str]] = run_simulation(
             network.nb_drones, network.start_hub, network.end_hub,
             graph, paths)
+
         for log in logs:
             print(" ".join(log))
-        visualize(logs, graph)
+
+        try:
+            visualize(logs, graph)
+        except ValueError as error:
+            output_error_message(error)
 
 
 if __name__ == "__main__":

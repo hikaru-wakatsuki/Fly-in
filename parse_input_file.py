@@ -4,6 +4,7 @@ from typing import Tuple, Optional, List, Set
 
 
 class ZoneType(Enum):
+    """ゾーンの種類を表す列挙型。"""
     NORMAL = 'normal'
     BLOCKED = 'blocked'
     RESTRICTED = 'restricted'
@@ -11,6 +12,16 @@ class ZoneType(Enum):
 
 
 class Zone(BaseModel):
+    """
+    ドローンネットワーク内のゾーン（ハブ）を表すクラス
+
+    Attributes:
+        name (str): ゾーン名（スペースやハイフンは禁止）
+        coordinate (Tuple[int, int]): ゾーンの座標 (x, y)
+        zone (ZoneType): ゾーンの種類
+        color (Optional[str]): 任意の色情報
+        max_drones (int): 同時に存在できる最大ドローン数
+    """
     model_config = ConfigDict(frozen=True)
     name: str = Field(...)
     coordinate: Tuple[int, int] = Field(...)
@@ -20,23 +31,42 @@ class Zone(BaseModel):
 
     @model_validator(mode='after')
     def hub_check(self) -> "Zone":
+        """ゾーン名のバリデーションを実施"""
         if ' ' in self.name or '-' in self.name:
             raise ValueError("Zone names can not use dashes and spaces.")
         return self
 
 
 class Connection(BaseModel):
+    """
+    ゾーン間の接続（リンク）を表すクラス。
+
+    Attributes:
+        hubs (Tuple[str, str]): 接続する2つのハブ名。
+        max_link_capacity (int): 接続の最大容量。
+    """
     hubs: Tuple[str, str] = Field(...)
     max_link_capacity: int = Field(1, gt=0)
 
     @model_validator(mode='after')
     def connection_check(self) -> "Connection":
+        """接続のバリデーションを実施"""
         if self.hubs[0] == self.hubs[1]:
             raise ValueError("connection must link two different hubs")
         return self
 
 
 class DronesNetwork(BaseModel):
+    """
+    ドローン配送ネットワーク全体を表すモデル。
+
+    Attributes:
+        nb_drones (int): ドローンの総数（1以上）。
+        start_hub (Zone): 出発地点となるハブ。
+        end_hub (Zone): 到着地点となるハブ。
+        hubs (List[Zone]): 中間ハブの一覧。
+        connections (List[Connection]): ハブ間の接続情報。
+    """
     nb_drones: int = Field(..., gt=0)
     start_hub: Zone = Field(...)
     end_hub: Zone = Field(...)
@@ -45,6 +75,8 @@ class DronesNetwork(BaseModel):
 
     @model_validator(mode='after')
     def drones_network_check(self) -> "DronesNetwork":
+        """ネットワーク全体の整合性を検証"""
+
         all_zones: List[Zone] = [self.start_hub, self.end_hub] + self.hubs
         zone_names: Set[str] = set()
         zone_coordinates: Set[str] = set()
@@ -72,10 +104,10 @@ class DronesNetwork(BaseModel):
                 raise ValueError(f"Duplicate connection: {hub1}-{hub2}")
             seen_connections.add(connection_key)
 
-        if self.start_hub.max_drones != 1:
-            print("Warning: start_hub max_drones is ignored")
-        if self.end_hub.max_drones != 1:
-            print("Warning: end_hub max_drones is ignored")
+        if self.start_hub.max_drones < self.nb_drones:
+            raise ValueError("start_hub max_drones must be >= nb_drones")
+        if self.end_hub.max_drones < self.nb_drones:
+            raise ValueError("end_hub max_drones must be >= nb_drones")
         if self.start_hub.zone == ZoneType.BLOCKED:
             raise ValueError("start_hub cannot be blocked")
         if self.end_hub.zone == ZoneType.BLOCKED:
@@ -84,6 +116,7 @@ class DronesNetwork(BaseModel):
 
 
 def parse_input_file(file_name: str) -> DronesNetwork:
+    """ファイルを読み込み、ドローンネットワークを構築"""
     try:
         with open(file_name) as f:
             text: str = f.read()
@@ -94,8 +127,10 @@ def parse_input_file(file_name: str) -> DronesNetwork:
 
 
 def parse_lines(lines: List[str]) -> DronesNetwork:
+    """行リストからドローンネットワークの構築"""
 
     def create_zone(config: str) -> Zone:
+        """1行の文字列からZoneオブジェクトの生成"""
         parts = config.split(maxsplit=3)
         if len(parts) not in (3, 4):
             raise ValueError(f"Invalid zone format: {config}")
@@ -146,6 +181,7 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
                     zone=zone, color=color, max_drones=max_drones)
 
     def create_connection(config: str) -> Connection:
+        """1行の文字列からConnectionオブジェクトの生成"""
         parts = config.split(maxsplit=1)
         if '-' not in parts[0]:
             raise ValueError(f"Invalid connection format: {config}")

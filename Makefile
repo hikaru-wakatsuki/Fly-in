@@ -1,4 +1,4 @@
-FILE := 01_the_impossible_dream.txt
+FILE := input_file.txt
 VENV := .venv
 REQUIREMENTS := requirements.txt
 MAIN := main.py
