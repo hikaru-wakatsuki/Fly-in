@@ -28,12 +28,12 @@ def visualize(logs: List[List[str]],
     # 色変換
     def parse_color(color: Optional[str]) -> Tuple[int, int, int]:
         if color is None:
-            color = 'gray'
+            return (120, 120, 120)
         try:
             c = pygame.Color(color)
             return (c.r, c.g, c.b)
         except ValueError as error:
-            raise ValueError() from error
+            raise ValueError(f"Invalid color value: '{color}'") from error
 
     # 座標変換
     def to_screen(zone: Zone) -> Tuple[int, int]:
