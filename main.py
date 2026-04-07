@@ -9,6 +9,11 @@ from output_visualize import visualize
 
 
 def output_error_message(error: Exception) -> None:
+    """
+    例外情報を整形して出力し、プログラムを終了する
+    Args:
+        error (Exception): 発生した例外オブジェクト
+    """
     tb = error.__traceback__
     while tb.tb_next:
         tb = tb.tb_next
@@ -19,6 +24,19 @@ def output_error_message(error: Exception) -> None:
 
 
 def main() -> None:
+    """
+    ドローンシミュレーションの処理フローを制御する。
+
+    実行手順:
+        1. コマンドライン引数の検証
+        2. 入力ファイルを解析し `DronesNetwork` を生成
+        3. ネットワークからグラフを構築
+        4. 使用する経路数を決定
+        5. スタートからゴールまでの複数経路を探索
+        6. シミュレーションを実行しログを生成
+        7. ログを出力
+        8. 可視化を実行
+    """
     if len(sys.argv) != 2:
         return
     if len(sys.argv) == 2:

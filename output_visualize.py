@@ -5,6 +5,29 @@ from parse_input_file import Zone, ZoneType
 
 def visualize(logs: List[List[str]],
               graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
+    """ドローンシミュレーション結果をPygameで可視化
+
+    シミュレーションログを元に、ゾーン・リンク・ドローンの動きを
+    ターンごとに描画する。
+
+    描画内容:
+        - ゾーン（四角形）
+            - 色: zone.color（未指定はグレー）
+            - max_drones >= 2 の場合は外枠表示
+            - RESTRICTEDゾーンは赤文字
+        - リンク（線）
+            - 太さは max_link_capacity に比例
+        - ドローン（円）
+            - ゾーン上またはリンク中間に描画
+        - ターン表示および凡例
+
+    ログフォーマット:
+        logs = [
+            ["D1-A", "D2-A-B"], ...
+        ]
+        - "D1-A": ドローン1がゾーンAにいる
+        - "D2-A-B": ドローン2がA→B間のリンク上にいる
+    """
     # pygameスタート
     pygame.init()
 
@@ -27,6 +50,7 @@ def visualize(logs: List[List[str]],
 
     # 色変換
     def parse_color(color: Optional[str]) -> Tuple[int, int, int]:
+        """文字列カラーをRGBタプルに変換"""
         if color is None:
             return (120, 120, 120)
         try:
@@ -37,6 +61,7 @@ def visualize(logs: List[List[str]],
 
     # 座標変換
     def to_screen(zone: Zone) -> Tuple[int, int]:
+        """ゾーン座標を画面座標へ変換"""
         x, y = zone.coordinate
         return (
             x * SCALE + OFFSET_X,

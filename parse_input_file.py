@@ -75,7 +75,13 @@ class DronesNetwork(BaseModel):
 
     @model_validator(mode='after')
     def drones_network_check(self) -> "DronesNetwork":
-        """ネットワーク全体の整合性を検証"""
+        """ネットワーク全体の整合性を検証
+        検証内容:
+            - ゾーン名の一意性
+            - 座標の一意性
+            - 接続の整合性（存在確認・重複禁止）
+            - start/end の制約チェック
+        """
 
         all_zones: List[Zone] = [self.start_hub, self.end_hub] + self.hubs
         zone_names: Set[str] = set()
@@ -116,7 +122,7 @@ class DronesNetwork(BaseModel):
 
 
 def parse_input_file(file_name: str) -> DronesNetwork:
-    """ファイルを読み込み、ドローンネットワークを構築"""
+    """入力ファイルを読み込み、ドローンネットワークを構築"""
     try:
         with open(file_name) as f:
             text: str = f.read()
@@ -127,10 +133,24 @@ def parse_input_file(file_name: str) -> DronesNetwork:
 
 
 def parse_lines(lines: List[str]) -> DronesNetwork:
-    """行リストからドローンネットワークの構築"""
+    """テキスト行からドローンネットワークを構築する。
+
+    入力フォーマット:
+        nb_drones: <int>
+        start_hub: <zone定義>
+        end_hub: <zone定義>
+        hub: <zone定義>
+        connection: <hub1-hub2> [max_link_capacity=...]
+
+    コメント行 (#) と空行は無視される。
+    """
 
     def create_zone(config: str) -> Zone:
-        """1行の文字列からZoneオブジェクトの生成"""
+        """1行の文字列からZoneオブジェクトの生成
+
+        フォーマット:
+            name x y [key=value ...]
+        """
         parts = config.split(maxsplit=3)
         if len(parts) not in (3, 4):
             raise ValueError(f"Invalid zone format: {config}")
@@ -181,7 +201,11 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
                     zone=zone, color=color, max_drones=max_drones)
 
     def create_connection(config: str) -> Connection:
-        """1行の文字列からConnectionオブジェクトの生成"""
+        """1行の文字列からConnectionオブジェクトの生成
+        
+        フォーマット:
+            hub1-hub2 [max_link_capacity=...]
+        """
         parts = config.split(maxsplit=1)
         if '-' not in parts[0]:
             raise ValueError(f"Invalid connection format: {config}")

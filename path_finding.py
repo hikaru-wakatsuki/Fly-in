@@ -3,6 +3,14 @@ from typing import Tuple, Optional, List, Dict, Set
 
 
 def get_cost(zone: Zone) -> int:
+    """ゾーンに応じた移動コストを計算する。
+
+    コストは以下のルールで加算される:
+        - 基本コスト: 1
+        - RESTRICTEDゾーン: +5
+        - max_drones <= 1: +5（混雑・ボトルネック）
+        - max_drones == 2: +2
+    """
     cost: int = 1
     if zone.zone == ZoneType.RESTRICTED:
         cost += 5
@@ -13,10 +21,16 @@ def get_cost(zone: Zone) -> int:
     return cost
 
 
-def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
+def find_shortest_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
                   start: Zone, end: Zone,
                   penalties: Dict[Tuple[Zone, Zone], int]) -> List[Zone]:
-    """Compute shortest paths from start using Dijkstra."""
+    """ペナルティ付きダイクストラ法で最短経路を決定
+
+    通常のダイクストラ法に加えて以下の拡張を行う:
+        - ゾーンごとのコスト（get_cost）を加算
+        - エッジごとのペナルティを加算
+        - 同距離の場合は PRIORITYゾーンを優先
+    """
     # 各ノードまでの最短距離と、経路復元用の直前ノードを初期化
     distance: Dict[Zone, Optional[int]] = {node: None for node in graph}
     prev_zone: Dict[Zone, Optional[Zone]] = {node: None for node in graph}
@@ -67,7 +81,13 @@ def dijkstra_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
 def add_penalty(
         path: List[Zone], penalties: Dict[Tuple[Zone, Zone], int],
         value: int = 2) -> None:
-    """Add penalty to all edges in the given path."""
+    """経路上のエッジにペナルティを追加
+
+    同じ経路が繰り返し選ばれないようにするため、
+    経路に含まれる全エッジのコストを増加
+
+    RESTRICTEDゾーンを含むエッジはペナルティを倍増
+    """
     for i in range(len(path) - 1):
         zone1: Zone = path[i]
         zone2: Zone = path[i + 1]
@@ -81,11 +101,17 @@ def add_penalty(
 def find_multiple_paths(
         graph: Dict[Zone, List[Tuple[Zone, int]]],
         start: Zone, end: Zone, count: int) -> List[List[Zone]]:
-    """Find multiple path candidates by re-running Dijkstra with penalties."""
+    """複数の異なる経路候補を探索
+
+    ダイクストラ法を複数回実行し、毎回ペナルティを追加することで
+    異なる経路を生成
+
+    同一経路が生成された場合は重複を除外
+    """
     penalties: Dict[Tuple[Zone, Zone], int] = {}
     paths: List[List[Zone]] = []
     for _ in range(count):
-        path = dijkstra_path(graph, start, end, penalties)
+        path = find_shortest_path(graph, start, end, penalties)
         add_penalty(path, penalties, 2)
         if path in paths:
             continue
@@ -94,7 +120,15 @@ def find_multiple_paths(
 
 
 def determine_path_count(nb_drones: int) -> int:
-    """Return number of paths to generate based on drone count."""
+    """ドローン数に応じて生成する経路数を決定
+
+    Rules:
+        - <= 2: 1経路
+        - <= 4: 2経路
+        - <= 8: 3経路
+        - <= 16: 4経路
+        - > 16: 5経路
+    """
     if nb_drones <= 2:
         return 1
     elif nb_drones <= 4:

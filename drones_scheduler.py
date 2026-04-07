@@ -3,6 +3,17 @@ from typing import Tuple, Optional, List, Dict
 
 
 class DroneState:
+    """単一ドローンの状態を管理するクラス
+
+    Attributes:
+        drone_count (int): ドローン識別番号
+        current_zone (Zone): 現在位置
+        path (List[Zone]): 割り当てられた経路
+        path_index (int): 現在の経路インデックス
+        in_transit (bool): リンク移動中かどうか
+        transit_to (Optional[Zone]): 移動先ゾーン（移動中のみ）
+        finished (bool): ゴール到達済みかどうか
+    """
     def __init__(self, drone_count: int, start: Zone,
                  path: List[Zone]) -> None:
         self.drone_count: int = drone_count
@@ -15,6 +26,14 @@ class DroneState:
 
 
 class SimulationState:
+    """シミュレーション全体の状態（占有・リンク使用）を管理するクラス
+
+    Attributes:
+        graph (Dict[Zone, List[Tuple[Zone, int]]]): グラフ（隣接リスト）
+        zone_occupancy (Dict[Zone, int]): 各ゾーンの現在占有数
+        link_usage (Dict[Tuple[Zone, Zone], int]): 各リンクの使用数
+        next_zone_reservation (Dict[Zone, int]): 次ターンでのゾーン予約数（同時突入防止）
+    """
     def __init__(self, graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
         self.graph: Dict[Zone, List[Tuple[Zone, int]]] = graph
         # 現在の占有
@@ -23,17 +42,24 @@ class SimulationState:
         self.next_zone_reservation: Dict[Zone, int] = {}
 
     def initialize_state(self, drones: List[DroneState]) -> None:
+        """初期状態としてゾーン占有数を設定"""
         for drone in drones:
             zone: Zone = drone.current_zone
             self.zone_occupancy[zone] = self.zone_occupancy.get(zone, 0) + 1
 
     def leave_zone(self, zone: Zone) -> None:
+        """ゾーンからドローンが離脱した際の占有数を更新"""
         self.zone_occupancy[zone] -= 1
 
     def enter_zone(self, zone: Zone) -> None:
+        """ゾーンにドローンが入った際の占有数を更新"""
         self.zone_occupancy[zone] = self.zone_occupancy.get(zone, 0) + 1
 
     def leave_link(self, from_zone: Zone, to_zone: Zone) -> None:
+        """リンク移動完了時の状態更新
+
+        リンク使用数を減少させ、予約を解除し、到達ゾーンへドローンを配置
+        """
         link: Tuple[Zone, Zone] = tuple(
             sorted((from_zone, to_zone), key=lambda zone: zone.name))
         self.link_usage[link] = self.link_usage.get(link) - 1
@@ -41,6 +67,10 @@ class SimulationState:
         self.enter_zone(to_zone)
 
     def enter_link(self, from_zone: Zone, to_zone: Zone) -> None:
+        """リンクへの進入時の状態更新
+
+        出発ゾーンの占有数を減らし、リンク使用数と到達ゾーンの予約数を更新
+        """
         self.leave_zone(from_zone)
         link: Tuple[Zone, Zone] = tuple(
             sorted((from_zone, to_zone), key=lambda zone: zone.name))
@@ -51,6 +81,12 @@ class SimulationState:
 
 def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
              end: Zone) -> bool:
+    """ドローンが次のゾーンへ移動可能かを判定
+
+    判定条件:
+        - 到達ゾーンの収容上限（max_drones）を超えない
+        - リンク容量（max_link_capacity）を超えない
+    """
     if to_zone != end:
         current_occupancy: int = state.zone_occupancy.get(to_zone, 0)
         reserved: int = state.next_zone_reservation.get(to_zone, 0)
@@ -65,6 +101,12 @@ def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
 
 def run_turn(state: SimulationState, drones: List[DroneState],
              end: Zone) -> List[str]:
+    """1ターン分のシミュレーションを実行する。
+
+    処理は以下の順序で行う:
+        1. 移動中ドローンの到着処理
+        2. 次の移動の判定と実行(RESTRICTEDゾーンはリンク移動(2ステップ))
+    """
     movements: List[str] = []
     for drone in drones:
         if drone.finished:
@@ -105,6 +147,11 @@ def run_turn(state: SimulationState, drones: List[DroneState],
 
 def assign_paths(drone_count: int, start: Zone,
                  paths: List[List[Zone]]) -> List[DroneState]:
+    """ドローンを複数経路へ割り当てる。
+
+    経路コストに加え、割り当て済み数によるペナルティを考慮し、
+    混雑を分散するように割り当てる。
+    """
     drones: List[DroneState] = []
     path_costs: List[int] = []
     for path in paths:
@@ -135,6 +182,12 @@ def assign_paths(drone_count: int, start: Zone,
 def run_simulation(drone_count: int, start: Zone, end: Zone,
                    graph: Dict[Zone, List[Tuple[Zone, int]]],
                    paths: List[List[Zone]]) -> List[str]:
+    """ドローン配送シミュレーションを実行
+    全ドローンがゴールに到達するまでターンを繰り返す
+    
+    Returns:
+        List[List[str]]: ターンごとの移動ログ
+    """
     drones: List[DroneState] = assign_paths(drone_count, start, paths)
     state: SimulationState = SimulationState(graph)
     state.initialize_state(drones)
