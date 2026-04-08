@@ -25,7 +25,7 @@ def output_error_message(error: Exception) -> None:
 
 def main() -> None:
     """
-    ドローンシミュレーションの処理フローを制御する。
+    ドローンシミュレーションの処理フローを制御
 
     実行手順:
         1. コマンドライン引数の検証

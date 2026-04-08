@@ -7,8 +7,7 @@ def visualize(logs: List[List[str]],
               graph: Dict[Zone, List[Tuple[Zone, int]]]) -> None:
     """ドローンシミュレーション結果をPygameで可視化
 
-    シミュレーションログを元に、ゾーン・リンク・ドローンの動きを
-    ターンごとに描画する。
+    ログを元に、ゾーン・リンク・ドローンの動きをターンごとに描画
 
     描画内容:
         - ゾーン（四角形）
@@ -20,13 +19,6 @@ def visualize(logs: List[List[str]],
         - ドローン（円）
             - ゾーン上またはリンク中間に描画
         - ターン表示および凡例
-
-    ログフォーマット:
-        logs = [
-            ["D1-A", "D2-A-B"], ...
-        ]
-        - "D1-A": ドローン1がゾーンAにいる
-        - "D2-A-B": ドローン2がA→B間のリンク上にいる
     """
     # pygameスタート
     pygame.init()
@@ -39,10 +31,13 @@ def visualize(logs: List[List[str]],
     # 拡大倍率
     SCALE = 80
     # 画面上の位置調整
-    OFFSET_X = (SCALE * (min_x + 1))
-    OFFSET_Y = SCALE * (max_y - min_y)
+    MARGIN = 50
+    width = (max_x - min_x) * SCALE + MARGIN * 2
+    height = (max_y - min_y) * SCALE + MARGIN * 2
+    OFFSET_X = -min_x * SCALE + MARGIN
+    OFFSET_Y = -min_y * SCALE + MARGIN
 
-    screen = pygame.display.set_mode((SCALE * (max_x + 2), OFFSET_Y * 2))
+    screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Fly-in Visualization")
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 28)
