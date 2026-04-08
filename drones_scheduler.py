@@ -184,7 +184,7 @@ def run_simulation(drone_count: int, start: Zone, end: Zone,
                    paths: List[List[Zone]]) -> List[str]:
     """ドローン配送シミュレーションを実行
     全ドローンがゴールに到達するまでターンを繰り返す
-    
+
     Returns:
         List[List[str]]: ターンごとの移動ログ
     """

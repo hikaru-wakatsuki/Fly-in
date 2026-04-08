@@ -22,8 +22,8 @@ def get_cost(zone: Zone) -> int:
 
 
 def find_shortest_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
-                  start: Zone, end: Zone,
-                  penalties: Dict[Tuple[Zone, Zone], int]) -> List[Zone]:
+                       start: Zone, end: Zone,
+                       penalties: Dict[Tuple[Zone, Zone], int]) -> List[Zone]:
     """ペナルティ付きダイクストラ法で最短経路を決定
 
     通常のダイクストラ法に加えて以下の拡張を行う:
