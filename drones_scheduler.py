@@ -113,16 +113,13 @@ def run_turn(state: SimulationState, drones: List[DroneState],
             continue
         if drone.in_transit:
             state.leave_link(drone.current_zone, drone.transit_to)
-            drone.in_transit = False
             drone.current_zone = drone.transit_to
+            drone.in_transit = False
             drone.transit_to = None
             drone.path_index += 1
             if drone.current_zone == end:
                 drone.finished = True
             movements.append(f"D{drone.drone_count}-{drone.current_zone.name}")
-
-    for drone in drones:
-        if drone.finished or drone.in_transit:
             continue
         next_zone: Zone = drone.path[drone.path_index + 1]
         if not can_move(state, drone.current_zone, next_zone, end):

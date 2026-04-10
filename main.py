@@ -62,7 +62,7 @@ def main() -> None:
             print(" ".join(log))
 
         try:
-            visualize(logs, graph)
+            visualize(logs, graph, network.start_hub, network.nb_drones)
         except ValueError as error:
             output_error_message(error)
 
