@@ -103,7 +103,7 @@ def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
 
 
 def run_turn(state: SimulationState, drones: List[DroneState],
-             start: Zone, end: Zone) -> List[str]:
+             end: Zone) -> List[str]:
     """1ターン分のシミュレーションを実行する。
 
     処理は以下の順序で行う:
@@ -126,23 +126,7 @@ def run_turn(state: SimulationState, drones: List[DroneState],
             continue
         next_zone: Zone = drone.path[drone.path_index + 1]
         if not can_move(state, drone.current_zone, next_zone, end):
-            if drone.current_zone == start:
-                continue
-            new_path: List[Zone] = recompute_path(
-                state, drone.current_zone, end)
-
-            if len(new_path) > 1:
-                drone.path = new_path
-                drone.path_index = 0
-                next_zone = drone.path[1]
-
-            if len(new_path) > 1:
-                drone.path = new_path
-                drone.path_index = 0
-                next_zone = drone.path[1]
-
-            if not can_move(state, drone.current_zone, next_zone, end):
-                continue
+            continue
         if next_zone.zone == ZoneType.RESTRICTED:
             state.enter_link(drone.current_zone, next_zone)
             drone.in_transit = True
@@ -209,7 +193,7 @@ def run_simulation(drone_count: int, start: Zone, end: Zone,
     state.initialize_state(drones)
     logs: List[List[str]] = []
     while not all(drone.finished for drone in drones):
-        logs.append(run_turn(state, drones, start, end))
+        logs.append(run_turn(state, drones, end))
     return logs
 
 
