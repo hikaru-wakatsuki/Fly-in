@@ -202,7 +202,6 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
 
     def create_connection(config: str) -> Connection:
         """1行の文字列からConnectionオブジェクトの生成
-        
         フォーマット:
             hub1-hub2 [max_link_capacity=...]
         """

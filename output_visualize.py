@@ -53,12 +53,11 @@ def visualize(logs: List[List[str]],
     progress_in_turn: float = 0.0
     FPS = 60
 
-    running = True
-
-    while turn < len(movements):
+    while turn < len(movements) - 1:
         # 時間更新
         dt = clock.tick(FPS) / 1000.0
-        progress_in_turn, turn = advance_turn_progress(progress_in_turn, dt, turn)
+        progress_in_turn, turn = advance_turn_progress(
+            progress_in_turn, dt, turn)
 
         # 画面リセット
         screen.fill((20, 20, 20))
@@ -66,7 +65,7 @@ def visualize(logs: List[List[str]],
         # イベント：ユーザがpygameを閉じた場合
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
 
         # --- links ---
         for from_zone, edges in graph.items():
@@ -97,8 +96,9 @@ def visualize(logs: List[List[str]],
             screen.blit(zone_name, (x - 9 - len(zone.name), y - 35))
 
         # --- drones ---
-        curr = movements[turn] if turn != len(movements) else movements[turn - 1]
-        prev = movements[turn - 1] if turn > 0 else curr
+        curr = (movements[turn + 1]
+                if turn != len(movements) - 1 else movements[turn])
+        prev = movements[turn]
 
         for drone_id in curr:
             x, y = interpolate_position(prev[drone_id], curr[drone_id],
@@ -120,7 +120,7 @@ def visualize(logs: List[List[str]],
         restricted_text = font.render("Restricted Zone", True, (255, 0, 0))
         screen.blit(restricted_text, (20, 80))
         pygame.display.flip()
-
+    pygame.time.wait(2000)
     pygame.quit()
 
 

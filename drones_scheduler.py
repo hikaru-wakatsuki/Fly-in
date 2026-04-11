@@ -85,8 +85,8 @@ def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
     """ドローンが次のゾーンへ移動可能かを判定
 
     判定条件:
-        - 到達ゾーンの収容上限（max_drones）を超えない
-        - リンク容量（max_link_capacity）を超えない
+        - 到達ゾーンの収容上限(max_drones)を超えない
+        - リンク容量(max_link_capacity)を超えない
     """
     if to_zone != end:
         current_occupancy: int = state.zone_occupancy.get(to_zone, 0)
@@ -98,7 +98,7 @@ def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
             max_link_capacity: int = capacity
             break
     link: Tuple[Zone, Zone] = tuple(
-    sorted((from_zone, to_zone), key=lambda zone: zone.name))
+        sorted((from_zone, to_zone), key=lambda zone: zone.name))
     return state.link_usage.get(link, 0) < max_link_capacity
 
 
@@ -127,20 +127,10 @@ def run_turn(state: SimulationState, drones: List[DroneState],
         next_zone: Zone = drone.path[drone.path_index + 1]
         if not can_move(state, drone.current_zone, next_zone, end):
             new_path: List[Zone] = recompute_path(
-                state,
-                drone.current_zone,
-                end,
-            )
-
-            if len(new_path) > 1:
-                drone.path = new_path
-                drone.path_index = 0
-                next_zone = drone.path[1]
-
-            if len(new_path) > 1:
-                drone.path = new_path
-                drone.path_index = 0
-                next_zone = drone.path[1]
+                state, drone.current_zone, end)
+            drone.path = new_path
+            drone.path_index = 0
+            next_zone = drone.path[1]
 
             if not can_move(state, drone.current_zone, next_zone, end):
                 continue
@@ -197,15 +187,17 @@ def assign_paths(drone_count: int, start: Zone,
 
 
 def run_simulation(drone_count: int, start: Zone, end: Zone,
-                   graph: Dict[Zone, List[Tuple[Zone, int]]],
-                   paths: List[List[Zone]]) -> List[str]:
+                   graph: Dict[Zone, List[Tuple[Zone, int]]]) -> List[str]:
     """ドローン配送シミュレーションを実行
     全ドローンがゴールに到達するまでターンを繰り返す
 
     Returns:
         List[List[str]]: ターンごとの移動ログ
     """
-    drones: List[DroneState] = assign_paths(drone_count, start, paths)
+    drones: List[DroneState] = []
+    path = find_shortest_path(graph, start, end)
+    for i in range(1, drone_count):
+        drones.append(DroneState(i, start, path))
     state: SimulationState = SimulationState(graph)
     state.initialize_state(drones)
     logs: List[List[str]] = []
@@ -214,18 +206,18 @@ def run_simulation(drone_count: int, start: Zone, end: Zone,
     return logs
 
 
-def recompute_path(
-    state: SimulationState,
-    current_zone: Zone,
-    end: Zone,
-) -> List[Zone]:
+def recompute_path(state: SimulationState, current_zone: Zone,
+                   end: Zone,) -> List[Zone]:
+    """混雑状況（リンク使用量・ゾーン占有）に基づくペナルティを考慮
+    current_zone から end までの最短経路を再計算
+    """
     penalties: Dict[Tuple[Zone, Zone], int] = {}
-
+    # linkが使用されている場合penalty付与
     for (zone1, zone2), usage in state.link_usage.items():
         if usage > 0:
             penalties[(zone1, zone2)] = usage * 4
             penalties[(zone2, zone1)] = usage * 4
-
+    # 専有中のZoneにpenalty付与
     for zone, occupancy in state.zone_occupancy.items():
         if zone != current_zone and zone != end and occupancy > 0:
             penalties[(current_zone, zone)] = occupancy * 2
