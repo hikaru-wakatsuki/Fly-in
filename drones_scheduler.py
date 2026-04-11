@@ -152,40 +152,6 @@ def run_turn(state: SimulationState, drones: List[DroneState],
     return movements
 
 
-def assign_paths(drone_count: int, start: Zone,
-                 paths: List[List[Zone]]) -> List[DroneState]:
-    """ドローンを複数経路へ割り当てる。
-
-    経路コストに加え、割り当て済み数によるペナルティを考慮し、
-    混雑を分散するように割り当てる。
-    """
-    drones: List[DroneState] = []
-    path_costs: List[int] = []
-    for path in paths:
-        cost: int = 0
-        for zone in path[1:]:
-            cost += 2 if zone.zone == ZoneType.RESTRICTED else 1
-        path_costs.append((cost))
-    assigned_counts: List[int] = []
-    for i in range(len(paths)):
-        assigned_counts.append(0)
-    drone_id = 1
-    for _ in range(drone_count):
-        best_index = 0
-        best_score = None
-        for i in range(len(paths)):
-            # assignされたpathにペナルティを加え重複をへらす
-            congestion_penalty: int = assigned_counts[i] * 3
-            score = path_costs[i] + congestion_penalty
-            if best_score is None or score < best_score:
-                best_score = score
-                best_index = i
-        assigned_counts[best_index] += 1
-        drones.append(DroneState(drone_id, start, paths[best_index]))
-        drone_id += 1
-    return drones
-
-
 def run_simulation(drone_count: int, start: Zone, end: Zone,
                    graph: Dict[Zone, List[Tuple[Zone, int]]]) -> List[str]:
     """ドローン配送シミュレーションを実行
@@ -196,7 +162,7 @@ def run_simulation(drone_count: int, start: Zone, end: Zone,
     """
     drones: List[DroneState] = []
     path = find_shortest_path(graph, start, end)
-    for i in range(1, drone_count):
+    for i in range(1, drone_count + 1):
         drones.append(DroneState(i, start, path))
     state: SimulationState = SimulationState(graph)
     state.initialize_state(drones)
