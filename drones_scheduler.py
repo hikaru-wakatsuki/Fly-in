@@ -126,11 +126,24 @@ def run_turn(state: SimulationState, drones: List[DroneState],
             continue
         next_zone: Zone = drone.path[drone.path_index + 1]
         if not can_move(state, drone.current_zone, next_zone, end):
-            new_path = recompute_path(state, drone.current_zone, end)
-            if new_path and len(new_path) > 1:
+            new_path: List[Zone] = recompute_path(
+                state,
+                drone.current_zone,
+                end,
+            )
+
+            if len(new_path) > 1:
                 drone.path = new_path
                 drone.path_index = 0
-            continue
+                next_zone = drone.path[1]
+
+            if len(new_path) > 1:
+                drone.path = new_path
+                drone.path_index = 0
+                next_zone = drone.path[1]
+
+            if not can_move(state, drone.current_zone, next_zone, end):
+                continue
         if next_zone.zone == ZoneType.RESTRICTED:
             state.enter_link(drone.current_zone, next_zone)
             drone.in_transit = True
