@@ -55,7 +55,7 @@ def visualize(logs: List[List[str]],
 
     running = True
 
-    while running:
+    while turn < len(movements):
         # 時間更新
         dt = clock.tick(FPS) / 1000.0
         progress_in_turn, turn = advance_turn_progress(progress_in_turn, dt, turn)
@@ -97,16 +97,15 @@ def visualize(logs: List[List[str]],
             screen.blit(zone_name, (x - 9 - len(zone.name), y - 35))
 
         # --- drones ---
-        curr = movements[turn]
+        curr = movements[turn] if turn != len(movements) else movements[turn - 1]
         prev = movements[turn - 1] if turn > 0 else curr
 
         for drone_id in curr:
-            x, y = interpolate_position(prev[drone_id], curr[drone_id], progress_in_turn,
-                                        OFFSET_X, OFFSET_Y)
+            x, y = interpolate_position(prev[drone_id], curr[drone_id],
+                                        progress_in_turn, OFFSET_X, OFFSET_Y)
 
             pygame.draw.circle(screen, (255, 80, 80), (int(x), int(y)), 8)
-            drone_label = font.render(f"D{drone_id}",
-                                        True, (255, 180, 180))
+            drone_label = font.render(f"D{drone_id}", True, (255, 180, 180))
             screen.blit(drone_label, (int(x) + 8, int(y) - 18))
 
         turn_label = font.render(f"Turn: {turn}", True, (255, 255, 255))
@@ -155,7 +154,8 @@ def advance_turn_progress(progress_in_turn, dt, turn, turn_duration=1.0):
 
 
 def interpolate_position(prev_zones: List[Zone], curr_zones: List[Zone],
-                         progress_in_turn: float, ox, oy) -> Tuple[float, float]:
+                         progress_in_turn: float,
+                         ox, oy) -> Tuple[float, float]:
     """前ターン→現在ターンを補間"""
     def get_pos(zones):
         if len(zones) == 1:
@@ -167,7 +167,8 @@ def interpolate_position(prev_zones: List[Zone], curr_zones: List[Zone],
 
     px, py = get_pos(prev_zones)
     cx, cy = get_pos(curr_zones)
-    return (px + (cx - px) * progress_in_turn, py + (cy - py) * progress_in_turn)
+    return (px + (cx - px) * progress_in_turn,
+            py + (cy - py) * progress_in_turn)
 
 
 def draw_drones(screen, movements, turn, frame_progress, font):
@@ -180,12 +181,14 @@ def draw_drones(screen, movements, turn, frame_progress, font):
         curr_zones = curr[drone_id]
         prev_zones = prev.get(drone_id, curr_zones)
 
-        x, y = interpolate_position(prev_zones, curr_zones, frame_progress, to_screen)
+        x, y = interpolate_position(
+            prev_zones, curr_zones, frame_progress, to_screen)
 
 
 def build_movements(logs: List[List[str]],
-                 graph: Dict[Zone, List[Tuple[Zone, int]]],
-                 start: Zone, drone_count: int) -> List[Dict[int, List[Zone]]]:
+                    graph: Dict[Zone, List[Tuple[Zone, int]]],
+                    start: Zone,
+                    drone_count: int) -> List[Dict[int, List[Zone]]]:
     """ログをターンごとの状態に変換"""
     # Zone名の辞書
     zone_map: Dict[str, Zone] = {}
@@ -196,7 +199,8 @@ def build_movements(logs: List[List[str]],
 
     movements: List[Dict[int, List[Zone]]] = []
     # 初期位置
-    current_movement: Dict[int, List[Zone]] = {i: [start] for i in range(1, drone_count + 1)}
+    current_movement: Dict[int, List[Zone]] = {
+        i: [start] for i in range(1, drone_count + 1)}
     movements.append(current_movement.copy())
 
     for turn in logs:
