@@ -1,5 +1,6 @@
 from parse_input_file import Zone, ZoneType
 from typing import Tuple, Optional, List, Dict
+from path_finding import find_shortest_path
 
 
 class DroneState:
@@ -96,11 +97,13 @@ def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
         if zone == to_zone:
             max_link_capacity: int = capacity
             break
-    return state.link_usage.get((from_zone, to_zone), 0) < max_link_capacity
+    link: Tuple[Zone, Zone] = tuple(
+    sorted((from_zone, to_zone), key=lambda zone: zone.name))
+    return state.link_usage.get(link, 0) < max_link_capacity
 
 
 def run_turn(state: SimulationState, drones: List[DroneState],
-             end: Zone) -> List[str]:
+             start: Zone, end: Zone) -> List[str]:
     """1ターン分のシミュレーションを実行する。
 
     処理は以下の順序で行う:
@@ -123,7 +126,23 @@ def run_turn(state: SimulationState, drones: List[DroneState],
             continue
         next_zone: Zone = drone.path[drone.path_index + 1]
         if not can_move(state, drone.current_zone, next_zone, end):
-            continue
+            if drone.current_zone == start:
+                continue
+            new_path: List[Zone] = recompute_path(
+                state, drone.current_zone, end)
+
+            if len(new_path) > 1:
+                drone.path = new_path
+                drone.path_index = 0
+                next_zone = drone.path[1]
+
+            if len(new_path) > 1:
+                drone.path = new_path
+                drone.path_index = 0
+                next_zone = drone.path[1]
+
+            if not can_move(state, drone.current_zone, next_zone, end):
+                continue
         if next_zone.zone == ZoneType.RESTRICTED:
             state.enter_link(drone.current_zone, next_zone)
             drone.in_transit = True
@@ -190,5 +209,24 @@ def run_simulation(drone_count: int, start: Zone, end: Zone,
     state.initialize_state(drones)
     logs: List[List[str]] = []
     while not all(drone.finished for drone in drones):
-        logs.append(run_turn(state, drones, end))
+        logs.append(run_turn(state, drones, start, end))
     return logs
+
+
+def recompute_path(
+    state: SimulationState,
+    current_zone: Zone,
+    end: Zone,
+) -> List[Zone]:
+    penalties: Dict[Tuple[Zone, Zone], int] = {}
+
+    for (zone1, zone2), usage in state.link_usage.items():
+        if usage > 0:
+            penalties[(zone1, zone2)] = usage * 4
+            penalties[(zone2, zone1)] = usage * 4
+
+    for zone, occupancy in state.zone_occupancy.items():
+        if zone != current_zone and zone != end and occupancy > 0:
+            penalties[(current_zone, zone)] = occupancy * 2
+
+    return find_shortest_path(state.graph, current_zone, end, penalties)
