@@ -34,49 +34,43 @@ def find_shortest_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
     """
     # 各ノードまでの最短距離と、経路復元用の直前ノードを初期化
     distance: Dict[Zone, Optional[int]] = {node: None for node in graph}
-    prev_zone: Dict[Zone, Optional[Zone]] = {node: None for node in graph}
-    unvisited: Set[Zone] = set(graph.keys())
+    previous: Dict[Zone, Optional[Zone]] = {node: None for node in graph}
+    unvisited: Set[Zone] = set(graph)
 
     distance[start] = 0
+    penalties = penalties or {}
     # 未確定ノードがある限り、最短距離が最も小さいノードを順に確定していく
     while unvisited:
-        current_distance: Optional[int] = None
-        current_node: Optional[Zone] = None
-        # 未確定ノードの中から、最も距離が短いノードを探す
-        # 同距離なら priority zone を優先する
-        for node in unvisited:
-            if distance[node] is None:
-                continue
-            if (current_distance is None or distance[node] < current_distance
-                or (distance[node] == current_distance
-                    and current_node is not None
-                    and node.zone == ZoneType.PRIORITY
-                    and current_node.zone != ZoneType.PRIORITY)):
-                current_node = node
-                current_distance = distance[node]
-
-        if current_node == end:
+        # 既に距離算出したNodeが対象
+        candidates = [node for node in unvisited if distance[node] is not None]
+        if not candidates:
             break
-        assert current_node is not None
-        assert current_distance is not None
-        unvisited.remove(current_node)
-        # 隣接ノードに対して、今のノード経由の方が短いかを確認して更新する
-        for neighbor, _ in graph[current_node]:
+        # 最短経路のノード検出（経路数が同じならばZoneType.PRIORITYを優先）
+        current: Zone = min(candidates, key=lambda node:
+                      (distance[node], 0 if node.zone == ZoneType.PRIORITY else 1))
+
+        if current == end:
+            break
+
+        unvisited.remove(current)
+        current_distance: int = distance[current]
+        # 最短経路のノードの隣のZoneを比較
+        for neighbor, _ in graph[current]:
             if neighbor not in unvisited:
                 continue
-            if penalties:
-                penalty: int = penalties.get((current_node, neighbor), 0)
-            else:
-                penalty = 0
-            new_distance: int = current_distance + get_cost(neighbor) + penalty
+            # penaltyを重みづけした距離を算出
+            new_distance: int = (current_distance + get_cost(neighbor)
+                                 + penalties.get((current, neighbor), 0))
+            # 比較して最短経路を発見する
             if distance[neighbor] is None or new_distance < distance[neighbor]:
                 distance[neighbor] = new_distance
-                prev_zone[neighbor] = current_node
+                previous[neighbor] = current
+
     # restore path
     path: List[Zone] = []
     cur: Optional[Zone] = end
     while cur is not None:
         path.append(cur)
-        cur = prev_zone[cur]
+        cur = previous[cur]
     path.reverse()
     return path

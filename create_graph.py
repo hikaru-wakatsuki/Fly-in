@@ -4,11 +4,8 @@ from typing import Tuple, List, Dict, Set
 
 def create_graph(network: DronesNetwork) -> Dict[Zone, List[Tuple[Zone, int]]]:
     """ドローンネットワークから隣接リスト形式のグラフを構築
-
     各ゾーンをノード、接続をエッジとする無向グラフを生成(BLOCKEDゾーンを含む接続は無視)
-
     エッジには接続の最大容量(max_link_capacity)を保持
-
     最後に、start_hub から end_hub への到達可能性を検証
     """
     graph: Dict[Zone, List[Tuple[Zone, int]]] = {}
@@ -35,8 +32,7 @@ def create_graph(network: DronesNetwork) -> Dict[Zone, List[Tuple[Zone, int]]]:
 def check_graph(
         graph: Dict[Zone, List[Tuple[Zone, int]]],
         start: Zone, end: Zone) -> bool:
-    """グラフ上で start から end への到達可能性を判定する。
-
+    """グラフ上で start から end への到達可能性を判定
     深さ優先探索(DFS)を用いて、startから探索を行い、endに到達できるかを確認
     """
     visited: Set[Zone] = {start}

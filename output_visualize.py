@@ -6,7 +6,17 @@ from parse_input_file import Zone, ZoneType
 # 拡大倍率
 SCALE = 80
 # 画面上の位置調整
-MARGIN = 50
+ZONE_SIZE = max(8, SCALE // 5)
+DRONE_RADIUS = max(4, SCALE // 10)
+LINK_WIDTH_UNIT = max(1, SCALE // 16)
+
+MARGIN = SCALE // 2
+HUD_TOP = SCALE * 2
+FPS = 60
+
+BG_COLOR = (20, 20, 20)
+LINK_COLOR = (80, 80, 80)
+TEXT_COLOR = (255, 255, 255)
 
 
 def visualize(logs: List[List[str]],
@@ -30,16 +40,7 @@ def visualize(logs: List[List[str]],
     # pygameスタート
     pygame.init()
 
-    max_x = max(zone.coordinate[0] for zone in graph.keys())
-    min_x = min(zone.coordinate[0] for zone in graph.keys())
-    max_y = max(zone.coordinate[1] for zone in graph.keys())
-    min_y = min(zone.coordinate[1] for zone in graph.keys())
-
-    width = (max_x - min_x) * SCALE + MARGIN * 2
-    height = (max_y - min_y) * SCALE + MARGIN * 2
-    OFFSET_X = -min_x * SCALE + MARGIN
-    OFFSET_Y = -min_y * SCALE + MARGIN
-
+    width, height, offset_x, offset_y = get_screen_layout(graph)
     zones = list(graph.keys())
     movements = build_movements(logs, graph, start, drone_count)
 
@@ -50,17 +51,16 @@ def visualize(logs: List[List[str]],
     zone_font = pygame.font.Font(None, 14)
 
     turn: int = 0
-    progress_in_turn: float = 0.0
-    FPS = 60
+    progress: float = 0.0
 
     while turn < len(movements) - 1:
         # 時間更新
         dt = clock.tick(FPS) / 1000.0
-        progress_in_turn, turn = advance_turn_progress(
-            progress_in_turn, dt, turn)
+        progress, turn = advance_turn_progress(
+            progress, dt, turn)
 
         # 画面リセット
-        screen.fill((20, 20, 20))
+        screen.fill(BG_COLOR)
 
         # イベント：ユーザがpygameを閉じた場合
         for event in pygame.event.get():
@@ -69,17 +69,17 @@ def visualize(logs: List[List[str]],
 
         # --- links ---
         for from_zone, edges in graph.items():
-            x1, y1 = to_screen(from_zone, OFFSET_X, OFFSET_Y)
-            for to_zone, max_link_capacity in edges:
-                x2, y2 = to_screen(to_zone, OFFSET_X, OFFSET_Y)
-                pygame.draw.line(screen, (80, 80, 80), (x1, y1), (x2, y2),
-                                 max_link_capacity * 5)
+            x1, y1 = to_screen(from_zone, offset_x, offset_y)
+            for to_zone, capacity in edges:
+                x2, y2 = to_screen(to_zone, offset_x, offset_y)
+                pygame.draw.line(screen, LINK_COLOR, (x1, y1), (x2, y2),
+                                 capacity * 5)
 
         # --- zones ---
+        diameter: int = SCALE // 5
         for zone in zones:
-            x, y = to_screen(zone, OFFSET_X, OFFSET_Y)
+            x, y = to_screen(zone, offset_x, offset_y)
             zone_color = parse_color(zone.color)
-            diameter: int = SCALE // 5
             if zone.max_drones > 1:
                 white_diameter: int = diameter + 5
                 rect = pygame.Rect(
@@ -102,18 +102,18 @@ def visualize(logs: List[List[str]],
 
         for drone_id in curr:
             x, y = interpolate_position(prev[drone_id], curr[drone_id],
-                                        progress_in_turn, OFFSET_X, OFFSET_Y)
+                                        progress, offset_x, offset_y)
 
             pygame.draw.circle(screen, (255, 80, 80), (int(x), int(y)), 8)
             drone_label = font.render(f"D{drone_id}", True, (255, 180, 180))
             screen.blit(drone_label, (int(x) + 8, int(y) - 18))
 
-        turn_label = font.render(f"Turn: {turn}", True, (255, 255, 255))
+        turn_label = font.render(f"Turn: {turn}", True, TEXT_COLOR)
         screen.blit(turn_label, (20, 20))
         # ① max_drones >= 2
         outer_rect = pygame.Rect(20, 50, 20, 20)
         pygame.draw.rect(screen, (220, 220, 220), outer_rect, 2)
-        legend_text = font.render("Capacity >= 2", True, (255, 255, 255))
+        legend_text = font.render("Capacity >= 2", True, TEXT_COLOR)
         screen.blit(legend_text, (50, 50))
 
         # ② restricted zone
@@ -122,6 +122,23 @@ def visualize(logs: List[List[str]],
         pygame.display.flip()
     pygame.time.wait(2000)
     pygame.quit()
+
+
+def get_screen_layout(graph: Dict[Zone, List[Tuple[Zone, int]]]) -> Tuple[int, int, int, int]:
+    """グラフ全体が収まる画面サイズとオフセットを返す"""
+    x_list: List[int] = [zone.coordinate[0] for zone in graph]
+    y_list: List[int] = [zone.coordinate[1] for zone in graph]
+    min_x: int = min(x_list)
+    max_x: int = max(x_list)
+    min_y: int = min(y_list)
+    max_y: int = max(y_list)
+    graph_width: int = (max_x - min_x) * SCALE
+    graph_heigth: int = (max_y - min_y) * SCALE
+    width: int = graph_width + MARGIN * 2
+    height: int = HUD_TOP + graph_heigth + MARGIN * 2
+    offset_x: int = MARGIN - min_x * SCALE
+    offset_y: int = HUD_TOP + MARGIN - min_y * SCALE
+    return (width, height, offset_x, offset_y)
 
 
 def to_screen(zone: Zone, offset_x: int, offset_y: int) -> Tuple[int, int]:
@@ -169,20 +186,6 @@ def interpolate_position(prev_zones: List[Zone], curr_zones: List[Zone],
     cx, cy = get_pos(curr_zones)
     return (px + (cx - px) * progress_in_turn,
             py + (cy - py) * progress_in_turn)
-
-
-def draw_drones(screen, movements, turn, frame_progress, font):
-    if turn >= len(movements):
-        return
-    curr = movements[turn]
-    prev = movements[turn - 1] if turn > 0 else curr
-
-    for drone_id in curr.keys():
-        curr_zones = curr[drone_id]
-        prev_zones = prev.get(drone_id, curr_zones)
-
-        x, y = interpolate_position(
-            prev_zones, curr_zones, frame_progress, to_screen)
 
 
 def build_movements(logs: List[List[str]],
