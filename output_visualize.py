@@ -4,10 +4,10 @@ from parse_input_file import Zone, ZoneType
 
 
 # 拡大倍率
-SCALE = 80
+SCALE = 10
 # 画面上の位置調整
 ZONE_SIZE = max(8, SCALE // 5)
-DRONE_RADIUS = max(4, SCALE // 10)
+DRONE_RADIUS = max(2, SCALE // 10)
 LINK_WIDTH_UNIT = max(1, SCALE // 16)
 
 MARGIN = SCALE // 2
