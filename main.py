@@ -14,6 +14,9 @@ def output_error_message(error: Exception) -> None:
         error (Exception): 発生した例外オブジェクト
     """
     tb = error.__traceback__
+    if tb is None:
+        print(f"Error: {error}")
+        sys.exit(1)
     while tb.tb_next:
         tb = tb.tb_next
     line_number = tb.tb_lineno
@@ -56,11 +59,7 @@ def main() -> None:
 
         for log in logs:
             print(" ".join(log))
-
-        try:
-            visualize(logs, graph, network.start_hub, network.nb_drones)
-        except ValueError as error:
-            output_error_message(error)
+        visualize(logs, graph, network.start_hub, network.nb_drones)
 
 
 if __name__ == "__main__":

@@ -85,7 +85,7 @@ class DronesNetwork(BaseModel):
 
         all_zones: List[Zone] = [self.start_hub, self.end_hub] + self.hubs
         zone_names: Set[str] = set()
-        zone_coordinates: Set[str] = set()
+        zone_coordinates: Set[Tuple[int, int]] = set()
 
         for zone in all_zones:
             if zone.name in zone_names:
@@ -105,7 +105,8 @@ class DronesNetwork(BaseModel):
                 raise ValueError(f"Connection references unknown hub: {hub1}")
             if hub2 not in zone_names:
                 raise ValueError(f"Connection references unknown hub: {hub2}")
-            connection_key: Tuple[str, str] = tuple(sorted((hub1, hub2)))
+            first_hub, second_hub = sorted((hub1, hub2))
+            connection_key: Tuple[str, str] = (first_hub, second_hub)
             if connection_key in seen_connections:
                 raise ValueError(f"Duplicate connection: {hub1}-{hub2}")
             seen_connections.add(connection_key)

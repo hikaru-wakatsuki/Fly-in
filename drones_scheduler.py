@@ -153,7 +153,8 @@ def run_turn(state: SimulationState, drones: List[DroneState],
 
 
 def run_simulation(drone_count: int, start: Zone, end: Zone,
-                   graph: Dict[Zone, List[Tuple[Zone, int]]]) -> List[str]:
+                   graph: Dict[Zone, List[Tuple[Zone, int]]]
+                   ) -> List[List[str]]:
     """ドローン配送シミュレーションを実行
     全ドローンがゴールに到達するまでターンを繰り返す
 
