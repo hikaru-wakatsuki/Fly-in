@@ -4,18 +4,28 @@ from parse_input_file import Zone, ZoneType
 
 
 # 拡大倍率
-SCALE = 10
+SCALE = 160
 # 画面上の位置調整
 ZONE_SIZE = max(8, SCALE // 5)
+MULTI_ZONE_SIZE = max(10, ZONE_SIZE * 1.2)
+ANN_ZONE_SIZE = SCALE // 6
 DRONE_RADIUS = max(2, SCALE // 10)
 LINK_WIDTH_UNIT = max(1, SCALE // 16)
-
+FONT = max(1, SCALE // 4)
+ZONE_FONT = max(1, SCALE // 6)
 MARGIN = SCALE // 2
 HUD_TOP = SCALE * 2
+ANNOTATION = SCALE // 4
+
 FPS = 60
 
-BG_COLOR = (20, 20, 20)
+BG_COLOR = (30, 30, 30)
 LINK_COLOR = (80, 80, 80)
+WHITE = (220, 220, 220)
+RED = (255, 0, 0)
+MUTED_RED = (255, 80, 80)
+LIGHT_PINK = (255, 180, 180)
+YELLOW = (255, 255, 80)
 TEXT_COLOR = (255, 255, 255)
 
 
@@ -47,8 +57,8 @@ def visualize(logs: List[List[str]],
     screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Fly-in Visualization")
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 28)
-    zone_font = pygame.font.Font(None, 14)
+    font = pygame.font.Font(None, FONT)
+    zone_font = pygame.font.Font(None, ZONE_FONT)
 
     turn: int = 0
     progress: float = 0.0
@@ -76,24 +86,22 @@ def visualize(logs: List[List[str]],
                                  capacity * 5)
 
         # --- zones ---
-        diameter: int = SCALE // 5
         for zone in zones:
             x, y = to_screen(zone, offset_x, offset_y)
             zone_color = parse_color(zone.color)
             if zone.max_drones > 1:
-                white_diameter: int = diameter + 5
-                rect = pygame.Rect(
-                    x - white_diameter, y - white_diameter,
-                    white_diameter * 2, white_diameter * 2)
-                pygame.draw.rect(screen, (220, 220, 220), rect, 0)
-            # 四角形(left, top, width, height)
+                # 四角形(left, top, width, height)
+                rect = pygame.Rect(x - MULTI_ZONE_SIZE, y - MULTI_ZONE_SIZE,
+                                   MULTI_ZONE_SIZE * 2, MULTI_ZONE_SIZE * 2)
+                pygame.draw.rect(screen, WHITE, rect, 0)
             rect = pygame.Rect(
-                x - diameter, y - diameter, diameter * 2, diameter * 2)
+                x - ZONE_SIZE, y - ZONE_SIZE, ZONE_SIZE * 2, ZONE_SIZE * 2)
             pygame.draw.rect(screen, zone_color, rect, 0)
-            name_color = ((255, 0, 0) if zone.zone == ZoneType.RESTRICTED
-                          else (220, 220, 220))
+            name_color = (RED if zone.zone == ZoneType.RESTRICTED else (
+                YELLOW if zone.zone == ZoneType.PRIORITY else WHITE
+            ))
             zone_name = zone_font.render(zone.name, True, name_color)
-            screen.blit(zone_name, (x - 9 - len(zone.name), y - 35))
+            screen.blit(zone_name, (x - MULTI_ZONE_SIZE, y + MULTI_ZONE_SIZE))
 
         # --- drones ---
         curr = (movements[turn + 1]
@@ -103,28 +111,31 @@ def visualize(logs: List[List[str]],
         for drone_id in curr:
             x, y = interpolate_position(prev[drone_id], curr[drone_id],
                                         progress, offset_x, offset_y)
+            pygame.draw.circle(
+                screen, MUTED_RED, (int(x), int(y)), DRONE_RADIUS)
+            drone_label = font.render(f"D{drone_id}", True, LIGHT_PINK)
+            screen.blit(drone_label, (int(x) + (SCALE // 10), int(y)))
 
-            pygame.draw.circle(screen, (255, 80, 80), (int(x), int(y)), 8)
-            drone_label = font.render(f"D{drone_id}", True, (255, 180, 180))
-            screen.blit(drone_label, (int(x) + 8, int(y) - 18))
-
+        # 注記
         turn_label = font.render(f"Turn: {turn}", True, TEXT_COLOR)
-        screen.blit(turn_label, (20, 20))
-        # ① max_drones >= 2
-        outer_rect = pygame.Rect(20, 50, 20, 20)
-        pygame.draw.rect(screen, (220, 220, 220), outer_rect, 2)
+        screen.blit(turn_label, (ANNOTATION, ANNOTATION))
+        outer_rect = pygame.Rect(
+            ANNOTATION, ANNOTATION * 2, ANN_ZONE_SIZE, ANN_ZONE_SIZE)
+        pygame.draw.rect(screen, WHITE, outer_rect, 2)
         legend_text = font.render("Capacity >= 2", True, TEXT_COLOR)
-        screen.blit(legend_text, (50, 50))
-
-        # ② restricted zone
-        restricted_text = font.render("Restricted Zone", True, (255, 0, 0))
-        screen.blit(restricted_text, (20, 80))
+        screen.blit(legend_text, (ANNOTATION * 2, ANNOTATION * 2))
+        restricted_text = font.render("Restricted Zone", True, RED)
+        screen.blit(restricted_text, (ANNOTATION, ANNOTATION * 3))
+        priority_text = font.render("Priority Zone", True, YELLOW)
+        screen.blit(priority_text, (ANNOTATION, ANNOTATION * 4))
         pygame.display.flip()
     pygame.time.wait(2000)
     pygame.quit()
 
 
-def get_screen_layout(graph: Dict[Zone, List[Tuple[Zone, int]]]) -> Tuple[int, int, int, int]:
+def get_screen_layout(
+        graph: Dict[Zone, List[Tuple[Zone, int]]]
+        ) -> Tuple[int, int, int, int]:
     """グラフ全体が収まる画面サイズとオフセットを返す"""
     x_list: List[int] = [zone.coordinate[0] for zone in graph]
     y_list: List[int] = [zone.coordinate[1] for zone in graph]
@@ -133,9 +144,9 @@ def get_screen_layout(graph: Dict[Zone, List[Tuple[Zone, int]]]) -> Tuple[int, i
     min_y: int = min(y_list)
     max_y: int = max(y_list)
     graph_width: int = (max_x - min_x) * SCALE
-    graph_heigth: int = (max_y - min_y) * SCALE
+    graph_height: int = (max_y - min_y) * SCALE
     width: int = graph_width + MARGIN * 2
-    height: int = HUD_TOP + graph_heigth + MARGIN * 2
+    height: int = HUD_TOP + graph_height + MARGIN * 2
     offset_x: int = MARGIN - min_x * SCALE
     offset_y: int = HUD_TOP + MARGIN - min_y * SCALE
     return (width, height, offset_x, offset_y)

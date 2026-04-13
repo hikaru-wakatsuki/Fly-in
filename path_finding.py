@@ -47,7 +47,8 @@ def find_shortest_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
             break
         # 最短経路のノード検出（経路数が同じならばZoneType.PRIORITYを優先）
         current: Zone = min(candidates, key=lambda node:
-                      (distance[node], 0 if node.zone == ZoneType.PRIORITY else 1))
+                            (distance[node], 0
+                             if node.zone == ZoneType.PRIORITY else 1))
 
         if current == end:
             break
