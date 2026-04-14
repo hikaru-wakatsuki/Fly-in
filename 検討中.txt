@@ -1,0 +1,30 @@
+start_hub / end_hub の容量チェックが仕様より厳しすぎます。
+parse_input_file.py
+start_hub.max_drones >= nb_drones と end_hub.max_drones >= nb_drones を強制していますが、問題文では start と end は占有ルールの例外です。特に end は複数到着可で、max_drones に縛られる仕様ではありません。今の実装だと本来有効な入力を不正として弾きます。
+
+同一ターン内の「先に出るドローンが空けた枠」を正しく扱えていません。
+drones_scheduler.py
+問題文では「そのターンに出ていくドローンは同ターン中に容量を空ける」とありますが、run_turn() はドローンを順番に逐次処理しています。そのため、後ろで処理されるドローンが出ていく予定でも、先に処理されたドローンは can_move() 時点でまだ満員扱いになります。これは仕様違反になりうる上、ターン数も悪化します。
+
+パーサが「接続は previously defined zones のみ」を満たしていません。
+parse_input_file.py
+接続先ゾーンの存在確認は最後に DronesNetwork 全体を検証するときに行っているので、connection: が hub: より前に出てきても通ってしまいます。問題文は「connections must link only previously defined zones」です。
+
+パースエラーが「入力ファイルの行番号」を返しません。
+parse_input_file.py, main.py
+仕様では「clear error message indicating the line and cause」が必要です。現状は Python 側のソースコード行番号を出しているだけで、入力ファイルの何行目が悪いのか分かりません。レビューでかなり突かれやすい点です。
+
+複数経路への能動的な分配が弱く、 mandatory の最適化要件に対して不足気味です。
+drones_scheduler.py
+初期化時に全ドローンへ同じ最短経路を配っており、詰まったときだけ再探索しています。問題文の「Distribution of drones across multiple paths」「maximize throughput」に対して、対応はしているというより受動的です。動作はしても、ベンチマークで不利になる可能性が高いです。
+
+引数が不正なときに何も出さず終了します。
+main.py
+len(sys.argv) != 2 で即 return しており、使い方もエラーも出ません。明示的な仕様違反とまでは言い切れませんが、実行プログラムとしては不親切で、peer review では減点対象になりやすいです。
+
+補足
+
+flake8 と mypy は現状通っています。
+グラフライブラリ不使用、型ヒント、Pygame 可視化、基本的な zone/link capacity の考慮自体は入っています。
+いちばん危ないのは start/end 容量チェック、同一ターンの容量解放処理、入力行番号エラーの3点です。
+必要なら次に、これを「修正優先度順」に並べ替えて、最短で直す順番だけ整理します。
