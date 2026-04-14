@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by hikaru.*
+*This project has been created as part of the 42 curriculum by hwakatsu.*
 
 # Fly-in
 
@@ -243,10 +243,11 @@ The project is designed to fail early with explicit error messages when:
 - [Pygame documentation](https://www.pygame.org/docs/)
 - [mypy documentation](https://mypy.readthedocs.io/)
 - [flake8 documentation](https://flake8.pycqa.org/)
-- [Dijkstra's algorithm overview](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+- [Dijkstra's algorithm overview](https://qiita.com/simonritchie/items/216eae753fc393da52af)
+- [pygame documentation](https://westplain.sakura.ne.jp/translate/pygame/)
 
 ### AI Usage
-
+pygame
 AI was used as a support tool for:
 
 - improving documentation structure
