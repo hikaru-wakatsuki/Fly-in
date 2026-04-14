@@ -63,7 +63,7 @@ class SimulationState:
         """
         zone1, zone2 = sorted((from_zone, to_zone), key=lambda zone: zone.name)
         link: Tuple[Zone, Zone] = (zone1, zone2)
-        self.link_usage[link] = self.link_usage.get(link) - 1
+        self.link_usage[link] = self.link_usage.get(link, 0) - 1
         self.next_zone_reservation[to_zone] -= 1
         self.enter_zone(to_zone)
 
@@ -73,8 +73,8 @@ class SimulationState:
         出発ゾーンの占有数を減らし、リンク使用数と到達ゾーンの予約数を更新
         """
         self.leave_zone(from_zone)
-        link: Tuple[Zone, Zone] = tuple(
-            sorted((from_zone, to_zone), key=lambda zone: zone.name))
+        zone1, zone2 = sorted((from_zone, to_zone), key=lambda zone: zone.name)
+        link: Tuple[Zone, Zone] = (zone1, zone2)
         self.link_usage[link] = self.link_usage.get(link, 0) + 1
         next_zone_count: int = self.next_zone_reservation.get(to_zone, 0) + 1
         self.next_zone_reservation[to_zone] = next_zone_count
@@ -97,8 +97,8 @@ def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
         if zone == to_zone:
             max_link_capacity: int = capacity
             break
-    link: Tuple[Zone, Zone] = tuple(
-        sorted((from_zone, to_zone), key=lambda zone: zone.name))
+    zone1, zone2 = sorted((from_zone, to_zone), key=lambda zone: zone.name)
+    link: Tuple[Zone, Zone] = (zone1, zone2)
     return state.link_usage.get(link, 0) < max_link_capacity
 
 
@@ -115,6 +115,8 @@ def run_turn(state: SimulationState, drones: List[DroneState],
         if drone.finished:
             continue
         if drone.in_transit:
+            # Noneでないことの保証
+            assert drone.transit_to is not None
             state.leave_link(drone.current_zone, drone.transit_to)
             drone.current_zone = drone.transit_to
             drone.in_transit = False
