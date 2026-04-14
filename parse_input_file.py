@@ -27,13 +27,15 @@ class Zone(BaseModel):
     coordinate: Tuple[int, int] = Field(...)
     zone: ZoneType = ZoneType.NORMAL
     color: Optional[str] = None
-    max_drones: int = Field(1, gt=0)
+    max_drones: int = 1
 
     @model_validator(mode='after')
     def hub_check(self) -> "Zone":
         """ゾーン名のバリデーションを実施"""
         if ' ' in self.name or '-' in self.name:
             raise ValueError("Zone names can not use dashes and spaces.")
+        if self.max_drones < 1:
+            raise ValueError("Zone max_drones must be non negative")
         return self
 
 
@@ -46,13 +48,16 @@ class Connection(BaseModel):
         max_link_capacity (int): 接続の最大容量。
     """
     hubs: Tuple[str, str] = Field(...)
-    max_link_capacity: int = Field(1, gt=0)
+    max_link_capacity: int = 1
 
     @model_validator(mode='after')
     def connection_check(self) -> "Connection":
         """接続のバリデーションを実施"""
         if self.hubs[0] == self.hubs[1]:
             raise ValueError("connection must link two different hubs")
+        if self.max_link_capacity < 1:
+            raise ValueError(
+                "Connection max_link_capacity must be non negative")
         return self
 
 
