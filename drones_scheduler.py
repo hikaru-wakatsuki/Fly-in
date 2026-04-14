@@ -61,8 +61,8 @@ class SimulationState:
 
         リンク使用数を減少させ、予約を解除し、到達ゾーンへドローンを配置
         """
-        link: Tuple[Zone, Zone] = tuple(
-            sorted((from_zone, to_zone), key=lambda zone: zone.name))
+        zone1, zone2 = sorted((from_zone, to_zone), key=lambda zone: zone.name)
+        link: Tuple[Zone, Zone] = (zone1, zone2)
         self.link_usage[link] = self.link_usage.get(link) - 1
         self.next_zone_reservation[to_zone] -= 1
         self.enter_zone(to_zone)

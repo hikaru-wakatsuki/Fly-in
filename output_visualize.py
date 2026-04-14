@@ -184,14 +184,14 @@ def advance_turn_progress(progress: float, dt: float,
 
 def interpolate_position(prev_zones: List[Zone], curr_zones: List[Zone],
                          progress_in_turn: float,
-                         ox, oy) -> Tuple[int, int]:
+                         offset_x: int, offset_y: int) -> Tuple[int, int]:
     """前ターン→現在ターンを補間"""
-    def get_pos(zones):
+    def get_pos(zones: List[Zone]) -> Tuple[float, float]:
         if len(zones) == 1:
-            return to_screen(zones[0], ox, oy)
+            return to_screen(zones[0], offset_x, offset_y)
         else:
-            x1, y1 = to_screen(zones[0], ox, oy)
-            x2, y2 = to_screen(zones[1], ox, oy)
+            x1, y1 = to_screen(zones[0], offset_x, offset_y)
+            x2, y2 = to_screen(zones[1], offset_x, offset_y)
             return ((x1 + x2) / 2, (y1 + y2) / 2)
 
     px, py = get_pos(prev_zones)

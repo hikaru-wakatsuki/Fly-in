@@ -54,7 +54,9 @@ def find_shortest_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
             break
 
         unvisited.remove(current)
-        current_distance: int = distance[current]
+        current_distance: Optional[int] = distance[current]
+        # Noneでないことを保証
+        assert current_distance is not None
         # 最短経路のノードの隣のZoneを比較
         for neighbor, _ in graph[current]:
             if neighbor not in unvisited:
@@ -63,7 +65,8 @@ def find_shortest_path(graph: Dict[Zone, List[Tuple[Zone, int]]],
             new_distance: int = (current_distance + get_cost(neighbor)
                                  + penalties.get((current, neighbor), 0))
             # 比較して最短経路を発見する
-            if distance[neighbor] is None or new_distance < distance[neighbor]:
+            neighbor_distance: Optional[int] = distance[neighbor]
+            if neighbor_distance is None or new_distance < neighbor_distance:
                 distance[neighbor] = new_distance
                 previous[neighbor] = current
 
