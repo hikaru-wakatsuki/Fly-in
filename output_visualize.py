@@ -112,9 +112,9 @@ def visualize(logs: List[List[str]],
             x, y = interpolate_position(prev[drone_id], curr[drone_id],
                                         progress, offset_x, offset_y)
             pygame.draw.circle(
-                screen, MUTED_RED, (int(x), int(y)), DRONE_RADIUS)
+                screen, MUTED_RED, (x, y), DRONE_RADIUS)
             drone_label = font.render(f"D{drone_id}", True, LIGHT_PINK)
-            screen.blit(drone_label, (int(x) + (SCALE // 10), int(y)))
+            screen.blit(drone_label, (x + (SCALE // 10), y))
 
         # 注記
         turn_label = font.render(f"Turn: {turn}", True, TEXT_COLOR)
@@ -169,21 +169,22 @@ def parse_color(color: Optional[str]) -> Tuple[int, int, int]:
         return parse_color('gray')
 
 
-def advance_turn_progress(progress_in_turn, dt, turn, turn_duration=1.0):
+def advance_turn_progress(progress: float, dt: float,
+                          turn: int) -> Tuple[float, int]:
     """経過時間からターンの進行度とターン番号を更新する"""
     # ターン内の進行度を更新（0.0〜1.0）
-    progress_in_turn += dt / turn_duration
+    progress += dt
 
     # 1ターン分進んだら次のターンへ
-    if progress_in_turn >= 1.0:
-        progress_in_turn = 0.0
+    if progress >= 1.0:
+        progress = 0.0
         turn += 1
-    return progress_in_turn, turn
+    return progress, turn
 
 
 def interpolate_position(prev_zones: List[Zone], curr_zones: List[Zone],
                          progress_in_turn: float,
-                         ox, oy) -> Tuple[float, float]:
+                         ox, oy) -> Tuple[int, int]:
     """前ターン→現在ターンを補間"""
     def get_pos(zones):
         if len(zones) == 1:
@@ -195,8 +196,8 @@ def interpolate_position(prev_zones: List[Zone], curr_zones: List[Zone],
 
     px, py = get_pos(prev_zones)
     cx, cy = get_pos(curr_zones)
-    return (px + (cx - px) * progress_in_turn,
-            py + (cy - py) * progress_in_turn)
+    return (int(px + (cx - px) * progress_in_turn),
+            int(py + (cy - py) * progress_in_turn))
 
 
 def build_movements(logs: List[List[str]],

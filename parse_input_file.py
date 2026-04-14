@@ -25,8 +25,8 @@ class Zone(BaseModel):
     model_config = ConfigDict(frozen=True)
     name: str = Field(...)
     coordinate: Tuple[int, int] = Field(...)
-    zone: ZoneType = Field(ZoneType.NORMAL)
-    color: Optional[str] = Field(None)
+    zone: ZoneType = ZoneType.NORMAL
+    color: Optional[str] = None
     max_drones: int = Field(1, gt=0)
 
     @model_validator(mode='after')
