@@ -31,7 +31,7 @@ lint: install
 	--check-untyped-defs --exclude=.venv
 
 lint-strict: install
-	$(VENV)/bin/flake8 .
-	$(VENV)/bin/mypy . --strict
+	$(VENV)/bin/flake8 . --exclude=.venv
+	$(VENV)/bin/mypy . --strict --exclude=.venv
 
 .PHONY: install run debug clean lint lint-strict
