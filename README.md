@@ -130,8 +130,6 @@ connection: roof2-goal
 - duplicate connections are rejected
 - invalid metadata raises an error
 - capacity values must be positive integers
-- this implementation explicitly validates that the initial `start_hub` and
-  `end_hub` capacities are large enough for the total number of drones
 
 ## Output Format
 
