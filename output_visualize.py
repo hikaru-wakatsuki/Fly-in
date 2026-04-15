@@ -4,7 +4,7 @@ from parse_input_file import Zone, ZoneType
 
 
 # 拡大倍率
-SCALE = 80
+SCALE = 160
 # 画面上の位置調整
 ZONE_SIZE = max(8, SCALE // 5)
 MULTI_ZONE_SIZE = max(10, ZONE_SIZE * 1.2)
