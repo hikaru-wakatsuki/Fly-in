@@ -2,6 +2,7 @@ from pydantic import (BaseModel, Field, model_validator,
                       ConfigDict, ValidationError)
 from enum import Enum
 from typing import Tuple, Optional, List, Set
+import sys
 
 
 class ZoneType(Enum):
@@ -118,9 +119,11 @@ class DronesNetwork(BaseModel):
             seen_connections.add(connection_key)
 
         if self.start_hub.max_drones < self.nb_drones:
-            print("Warning: start_hub max_drones should be >= nb_drones")
+            print("Warning: start_hub max_drones should be >= nb_drones",
+                  file=sys.stderr)
         if self.end_hub.max_drones < self.nb_drones:
-            print("Warning: end_hub max_drones should be >= nb_drones")
+            print("Warning: end_hub max_drones should be >= nb_drones",
+                  file=sys.stderr)
         if self.start_hub.zone == ZoneType.BLOCKED:
             raise ValueError("start_hub cannot be blocked")
         if self.end_hub.zone == ZoneType.BLOCKED:
