@@ -30,11 +30,13 @@ def main() -> None:
             network: DronesNetwork = parse_input_file(sys.argv[1])
         except (ValidationError, TypeError, ValueError) as error:
             print(error)
+            sys.exit(1)
 
         try:
             graph: Dict[Zone, List[Tuple[Zone, int]]] = create_graph(network)
         except ValueError as error:
             print(error)
+            sys.exit(1)
 
         logs: List[List[str]] = run_simulation(
             network.nb_drones, network.start_hub, network.end_hub,

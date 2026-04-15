@@ -121,12 +121,17 @@ connection: roof2-goal
 
 ### Parsing rules
 
+- the first meaningful line must be `nb_drones: <positive integer>`
+- exactly one `start_hub` and one `end_hub` must be defined
 - zone names must be unique
 - coordinates must be unique
 - zone names cannot contain spaces or dashes
 - connections must reference existing zones
 - duplicate connections are rejected
 - invalid metadata raises an error
+- capacity values must be positive integers
+- this implementation explicitly validates that the initial `start_hub` and
+  `end_hub` capacities are large enough for the total number of drones
 
 ## Output Format
 
@@ -247,7 +252,7 @@ The project is designed to fail early with explicit error messages when:
 - [pygame documentation](https://westplain.sakura.ne.jp/translate/pygame/)
 
 ### AI Usage
-pygame
+
 AI was used as a support tool for:
 
 - improving documentation structure
