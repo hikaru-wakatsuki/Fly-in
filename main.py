@@ -40,18 +40,19 @@ def main() -> None:
         8. 可視化を実行
     """
     if len(sys.argv) != 2:
-        return
+        print("Usage: python3 main.py <input_file>")
+        sys.exit(1)
     if len(sys.argv) == 2:
 
         try:
             network: DronesNetwork = parse_input_file(sys.argv[1])
         except (ValidationError, TypeError, ValueError) as error:
-            output_error_message(error)
+            print(error)
 
         try:
             graph: Dict[Zone, List[Tuple[Zone, int]]] = create_graph(network)
         except ValueError as error:
-            output_error_message(error)
+            print(error)
 
         logs: List[List[str]] = run_simulation(
             network.nb_drones, network.start_hub, network.end_hub,

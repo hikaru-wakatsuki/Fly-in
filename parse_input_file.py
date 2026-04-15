@@ -251,12 +251,16 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
                     f"Unknown metadata key in connection {parts[0]}: {key}")
         return Connection(hubs=hubs, max_link_capacity=max_link_capacity)
 
-    first: Optional[str] = next(
-        (line.strip() for line in lines
+    first: Optional[Tuple[int, str]] = next(
+        ((i, line.strip()) for i, line in enumerate(lines, 1)
          if line.strip() and not line.strip().startswith('#')), None
         )
-    if not first or not first.startswith('nb_drones:'):
-        raise ValueError("First meaningful line must be nb_drones")
+    if first is None:
+        raise ValueError("Error: Missing nb_drones")
+    i, content = first
+    if not content.startswith('nb_drones:'):
+        raise ValueError(f"Error input line {i}: "
+                         f"First meaningful line must be nb_drones")
     seen_label: Set[str] = set()
     single_labels: Set[str] = {'nb_drones', 'start_hub', 'end_hub'}
     nb_drones: Optional[int] = None
@@ -264,41 +268,44 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
     end_hub: Optional[Zone] = None
     hubs: List[Zone] = []
     connections: List[Connection] = []
-    for line in lines:
+    for i, line in enumerate(lines, 1):
         line = line.strip()
         if line.startswith('#') or not line:
             continue
-        if ':' not in line:
-            raise ValueError(f"Invalid line: {line}")
-        parts: List[str] = line.split(':', 1)
-        label, config = parts
-        label = label.strip()
-        config = config.strip()
-        if label in single_labels:
-            if label in seen_label:
-                raise ValueError(f"Duplicate {label}")
-            seen_label.add(label)
-        if label == 'nb_drones':
-            try:
-                nb_drones = int(config)
-            except ValueError as error:
-                raise ValueError(f"Invalid nb_drones: {config}") from error
-        elif label == 'start_hub':
-            start_hub = create_zone(config)
-        elif label == 'end_hub':
-            end_hub = create_zone(config)
-        elif label == 'hub':
-            hubs.append(create_zone(config))
-        elif label == 'connection':
-            connections.append(create_connection(config))
-        else:
-            raise ValueError(f"Unknown label: {label}")
+        try:
+            if ':' not in line:
+                raise ValueError(f"Invalid line: {line}")
+            parts: List[str] = line.split(':', 1)
+            label, config = parts
+            label = label.strip()
+            config = config.strip()
+            if label in single_labels:
+                if label in seen_label:
+                    raise ValueError(f"Duplicate {label}")
+                seen_label.add(label)
+            if label == 'nb_drones':
+                try:
+                    nb_drones = int(config)
+                except ValueError as error:
+                    raise ValueError(f"Invalid nb_drones: {config}") from error
+            elif label == 'start_hub':
+                start_hub = create_zone(config)
+            elif label == 'end_hub':
+                end_hub = create_zone(config)
+            elif label == 'hub':
+                hubs.append(create_zone(config))
+            elif label == 'connection':
+                connections.append(create_connection(config))
+            else:
+                raise ValueError(f"Unknown label: {label}")
+        except ValueError as error:
+            raise ValueError(f"Error input line {i}: {error}") from error
     if nb_drones is None:
-        raise ValueError("Missing nb_drones")
+        raise ValueError("Error: Missing nb_drones")
     if start_hub is None:
-        raise ValueError("Missing start_hub")
+        raise ValueError("Error: Missing start_hub")
     if end_hub is None:
-        raise ValueError("Missing end_hub")
+        raise ValueError("Error: Missing end_hub")
     return DronesNetwork(
-        nb_drones=nb_drones, start_hub=start_hub, end_hub=end_hub,
-        hubs=hubs, connections=connections)
+            nb_drones=nb_drones, start_hub=start_hub, end_hub=end_hub,
+            hubs=hubs, connections=connections)
