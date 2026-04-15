@@ -117,6 +117,10 @@ class DronesNetwork(BaseModel):
                 raise ValueError(f"Duplicate connection: {hub1}-{hub2}")
             seen_connections.add(connection_key)
 
+        if self.start_hub.max_drones < self.nb_drones:
+            print("Warning: start_hub max_drones should be >= nb_drones")
+        if self.end_hub.max_drones < self.nb_drones:
+            print("Warning: end_hub max_drones should be >= nb_drones")
         if self.start_hub.zone == ZoneType.BLOCKED:
             raise ValueError("start_hub cannot be blocked")
         if self.end_hub.zone == ZoneType.BLOCKED:
