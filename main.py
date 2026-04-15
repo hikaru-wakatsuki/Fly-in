@@ -7,24 +7,6 @@ from drones_scheduler import run_simulation
 from output_visualize import visualize
 
 
-def output_error_message(error: Exception) -> None:
-    """
-    例外情報を整形して出力し、プログラムを終了する
-    Args:
-        error (Exception): 発生した例外オブジェクト
-    """
-    tb = error.__traceback__
-    if tb is None:
-        print(f"Error: {error}")
-        sys.exit(1)
-    while tb.tb_next:
-        tb = tb.tb_next
-    line_number = tb.tb_lineno
-    file_name = tb.tb_frame.f_code.co_filename
-    print(F"Error in {file_name} at line {line_number}: {error}")
-    sys.exit(1)
-
-
 def main() -> None:
     """
     ドローンシミュレーションの処理フローを制御

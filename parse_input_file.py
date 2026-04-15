@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, model_validator, ConfigDict
+from pydantic import (BaseModel, Field, model_validator,
+                      ConfigDict, ValidationError)
 from enum import Enum
 from typing import Tuple, Optional, List, Set
 
@@ -298,7 +299,7 @@ def parse_lines(lines: List[str]) -> DronesNetwork:
                 connections.append(create_connection(config))
             else:
                 raise ValueError(f"Unknown label: {label}")
-        except ValueError as error:
+        except (ValidationError, ValueError) as error:
             raise ValueError(f"Error input line {i}: {error}") from error
     if nb_drones is None:
         raise ValueError("Error: Missing nb_drones")
