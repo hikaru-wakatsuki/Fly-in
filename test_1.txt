@@ -1,0 +1,75 @@
+state.release_normal_link(normal_link_usage)
+    # for zone, zones in state.graph.items():
+    #     movements.append(f"{zone.name}:{state.zone_occupancy.get(zone, 0)}/{zone.max_drones}")
+    #     for zone22, i in zones:
+    #         zone1, zone2 = sorted((zone, zone22), key=lambda zone: zone.name)
+    #         link: Tuple[Zone, Zone] = (zone1, zone2)
+    #         movements.append(f"{zone.name}-{zone22.name}:{state.link_usage.get(link)}/{i}")
+    return movements
+
+
+def main() -> None:
+    """
+    ドローンシミュレーションの処理フローを制御
+
+    実行手順:
+        1. コマンドライン引数の検証
+        2. 入力ファイルを解析し `DronesNetwork` を生成
+        3. ネットワークからグラフを構築
+        4. 使用する経路数を決定
+        5. スタートからゴールまでの複数経路を探索
+        6. シミュレーションを実行しログを生成
+        7. ログを出力
+        8. 可視化を実行
+    """
+    if len(sys.argv) != 2 and len(sys.argv) != 3:
+        print("Usage: python3 main.py <input_file>")
+        sys.exit(1)
+    if len(sys.argv) == 2:
+
+        try:
+            network: DronesNetwork = parse_input_file(sys.argv[1])
+        except (ValidationError, TypeError, ValueError) as error:
+            print(error)
+            sys.exit(1)
+
+        try:
+            graph: Dict[Zone, List[Tuple[Zone, int]]] = create_graph(network)
+        except ValueError as error:
+            print(error)
+            sys.exit(1)
+
+        logs: List[List[str]] = run_simulation(
+            network.nb_drones, network.start_hub, network.end_hub,
+            graph)
+
+        for log in logs:
+            print(" ".join(log))
+        visualize(logs, graph, network.start_hub, network.nb_drones)
+
+    if len(sys.argv) == 3:
+        if sys.argv[1] != "--capacity-info":
+            return
+        print("OK")
+        try:
+            network: DronesNetwork = parse_input_file(sys.argv[2])
+        except (ValidationError, TypeError, ValueError) as error:
+            print(error)
+            sys.exit(1)
+
+        try:
+            graph: Dict[Zone, List[Tuple[Zone, int]]] = create_graph(network)
+        except ValueError as error:
+            print(error)
+            sys.exit(1)
+
+        logs: List[List[str]] = run_simulation(
+            network.nb_drones, network.start_hub, network.end_hub,
+            graph)
+
+        for log in logs:
+            print(" ".join(log))
+
+
+if __name__ == "__main__":
+    main()
