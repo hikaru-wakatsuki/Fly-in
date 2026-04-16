@@ -204,8 +204,8 @@ def recompute_path(state: SimulationState, current_zone: Zone,
     # linkが使用されている場合penalty付与
     for (zone1, zone2), usage in state.link_usage.items():
         if usage > 0:
-            penalties[(zone1, zone2)] = usage * 4
-            penalties[(zone2, zone1)] = usage * 4
+            penalties[(zone1, zone2)] = usage
+            penalties[(zone2, zone1)] = usage
     # 専有中のZoneにpenalty付与
     for zone, occupancy in state.zone_occupancy.items():
         if zone != current_zone and zone != end and occupancy > 0:
