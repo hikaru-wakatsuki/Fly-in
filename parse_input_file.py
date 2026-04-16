@@ -136,7 +136,7 @@ def parse_input_file(file_name: str) -> DronesNetwork:
     try:
         with open(file_name) as f:
             text: str = f.read()
-    except (FileNotFoundError, PermissionError) as error:
+    except (FileNotFoundError, PermissionError, IsADirectoryError) as error:
         raise ValueError(f"File error: {error}")
     lines: List[str] = text.splitlines()
     return parse_lines(lines)
