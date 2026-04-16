@@ -1,5 +1,5 @@
 from parse_input_file import Zone, ZoneType
-from typing import Tuple, Optional, List, Dict
+from typing import Tuple, Optional, List, Dict, Set
 from path_finding import find_shortest_path
 
 
@@ -79,6 +79,21 @@ class SimulationState:
         next_zone_count: int = self.next_zone_reservation.get(to_zone, 0) + 1
         self.next_zone_reservation[to_zone] = next_zone_count
 
+    def usage_normal_link(self, from_zone: Zone, to_zone: Zone,
+                          link_usage: Set[Tuple[Zone, Zone]]
+                          ) -> None:
+        """normal zone への1ターン移動でリンクを一時使用状態にする。"""
+        zone1, zone2 = sorted((from_zone, to_zone), key=lambda zone: zone.name)
+        link: Tuple[Zone, Zone] = (zone1, zone2)
+        self.link_usage[link] = self.link_usage.get(link, 0) + 1
+        link_usage.add(link)
+
+    def release_normal_link(self, link_usage: Set[Tuple[Zone, Zone]]
+                            ) -> None:
+        """このターン中に使用した normal link を解放する。"""
+        for link in link_usage:
+            self.link_usage[link] = 0
+
 
 def can_move(state: SimulationState, from_zone: Zone, to_zone: Zone,
              end: Zone) -> bool:
@@ -111,6 +126,7 @@ def run_turn(state: SimulationState, drones: List[DroneState],
         2. 次の移動の判定と実行(RESTRICTEDゾーンはリンク移動(2ステップ))
     """
     movements: List[str] = []
+    normal_link_usage: Set[Tuple[Zone, Zone]] = set()
     for drone in drones:
         if drone.finished:
             continue
@@ -136,6 +152,7 @@ def run_turn(state: SimulationState, drones: List[DroneState],
 
             if not can_move(state, drone.current_zone, next_zone, end):
                 continue
+
         if next_zone.zone == ZoneType.RESTRICTED:
             state.enter_link(drone.current_zone, next_zone)
             drone.in_transit = True
@@ -146,11 +163,14 @@ def run_turn(state: SimulationState, drones: List[DroneState],
         else:
             state.leave_zone(drone.current_zone)
             state.enter_zone(next_zone)
+            state.usage_normal_link(
+                drone.current_zone, next_zone, normal_link_usage)
             drone.current_zone = next_zone
             drone.path_index += 1
             if next_zone == end:
                 drone.finished = True
             movements.append(f"D{drone.drone_count}-{next_zone.name}")
+    state.release_normal_link(normal_link_usage)
     return movements
 
 
